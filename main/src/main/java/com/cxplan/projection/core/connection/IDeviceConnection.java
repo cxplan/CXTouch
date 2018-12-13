@@ -64,4 +64,6 @@ public interface IDeviceConnection extends IDeviceMeta {
      * return the thread of process video frame.
      */
     Thread getImageProcessThread();
+
+    void setDeviceName(String name);
 }

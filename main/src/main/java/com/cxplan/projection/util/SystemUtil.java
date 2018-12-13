@@ -1,5 +1,8 @@
 package com.cxplan.projection.util;
 
+import com.cxplan.projection.core.connection.IDeviceConnection;
+import com.cxplan.projection.core.setting.Setting;
+import com.cxplan.projection.core.setting.SettingConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,28 +16,21 @@ public class SystemUtil {
 
     private static final Logger logger = LoggerFactory.getLogger("system");
     public final static String separator = File.separator;
-    public static final String APPLICATION_NAME;
+    public static final String APPLICATION_NAME = "CXTouch";
     public static final String CONFIG_PATH;
-    private static final Properties systemProperties;
-
+    public final static String basePath;
     static {
+        basePath = System.getProperty("user.home") + separator + "." + APPLICATION_NAME + separator;
         String tmpPath = System.getProperty("config.path");
         if (tmpPath == null) {
             tmpPath = "conf";
             System.setProperty("config.path", tmpPath);
         }
         CONFIG_PATH = tmpPath;
-
-        systemProperties = loadPropertyFile(CONFIG_PATH + separator + "application.properties");
-        String appName = (String)systemProperties.get("name");
-        APPLICATION_NAME = appName;
+        checkUserDirectory();
     }
 
-    public final static String basePath = System.getProperty("user.home") + separator + "." + APPLICATION_NAME + separator;
-    public final static String DEFAULT_CACHE = basePath + "cache";
-
     public static String SETTING_FILE = basePath + "System.setting";
-
     public static String SETTING_SHORTCUT = basePath + "shortcut.setting";
 
     public static void checkUserDirectory() {
@@ -44,13 +40,6 @@ public class SystemUtil {
         }
     }
 
-    /**
-     * Return the property value matched with specified name.
-     * @param name the property name.
-     */
-    public static String getSystemProperty(String name) {
-        return systemProperties.getProperty(name);
-    }
     /**
      * Validate whether current os is mac os x
      *
@@ -92,6 +81,20 @@ public class SystemUtil {
         } else {
             return false;
         }
+    }
+
+    /**
+     * Install some necessary items for device connection.
+     * <li>name</li>
+     *
+     */
+    public static void installConfig(IDeviceConnection connection) {
+         if (connection == null) {
+             return;
+         }
+
+         String name = Setting.getInstance().getProperty(connection.getId(), SettingConstant.KEY_DEVICE_NAME, null);
+         connection.setDeviceName(name);
     }
 
     /**

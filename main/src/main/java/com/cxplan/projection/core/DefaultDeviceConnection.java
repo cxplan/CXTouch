@@ -237,6 +237,11 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
     }
 
     @Override
+    public void setDeviceName(String name) {
+        deviceMeta.setDeviceName(name);
+    }
+
+    @Override
     public void dispose() {
         closeNetworkResource();
         IDeviceConnection connection = Application.getInstance().getDeviceConnection(getId());

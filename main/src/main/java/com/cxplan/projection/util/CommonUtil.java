@@ -1,21 +1,11 @@
-/**
- * The code is written by ytx, and is confidential.
- * Anybody must not broadcast these files without authorization.
- */
 package com.cxplan.projection.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.plugin2.util.SystemUtil;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Calendar;
 import java.util.Properties;
 import java.util.StringTokenizer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created on 2017/4/16.

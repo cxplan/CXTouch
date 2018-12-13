@@ -38,7 +38,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @author kenny
  */
 public class DeviceImageFrame extends BaseFrame {
-    private static final StringManager s_stringMgr =
+    private static final StringManager stringMgr =
             StringManagerFactory.getStringManager(DeviceImageFrame.class);
 
     private static final Logger logger = LoggerFactory.getLogger(DeviceImageFrame.class);
@@ -128,7 +128,7 @@ public class DeviceImageFrame extends BaseFrame {
 
     private void openImageChannel() {
         if (!connection.isImageChannelAvailable()) {
-            showWaitingTip(s_stringMgr.getString("status.connecting"), null);
+            showWaitingTip(stringMgr.getString("status.connecting"), null);
             boolean ret = connection.openImageChannel(new ConnectStatusListener() {
                 @Override
                 public void OnSuccess(IDeviceConnection connection) {
@@ -136,15 +136,15 @@ public class DeviceImageFrame extends BaseFrame {
 
                 @Override
                 public void onFailed(IDeviceConnection connection, String error) {
-                    GUIUtil.showErrorMessageDialog(error, s_stringMgr.getString("connect.fail"));
+                    GUIUtil.showErrorMessageDialog(error, stringMgr.getString("connect.fail"));
                 }
             });
             if (ret) {
-                showWaitingTip(s_stringMgr.getString("status.waitimage"), null);
+                showWaitingTip(stringMgr.getString("status.waitimage"), null);
                 takeScreenshot();
             }
         } else {
-            showWaitingTip(s_stringMgr.getString("status.waitimage"), null);
+            showWaitingTip(stringMgr.getString("status.waitimage"), null);
             takeScreenshot();
         }
     }
@@ -223,7 +223,7 @@ public class DeviceImageFrame extends BaseFrame {
                 if (event.getType() == DeviceConnectionEvent.ConnectionType.MESSAGE) {
                     openImageChannel();
                 } else if (event.getType() == DeviceConnectionEvent.ConnectionType.IMAGE) {
-                    showWaitingTip(s_stringMgr.getString("status.waitimage"), null);
+                    showWaitingTip(stringMgr.getString("status.waitimage"), null);
                     takeScreenshot();
                 }
             }
@@ -316,12 +316,12 @@ public class DeviceImageFrame extends BaseFrame {
 
         JideButton backBtn = new JideButton(ICON_BACK);
         backBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
-        backBtn.setToolTipText(s_stringMgr.getString("navi.button.back.tooltip"));
+        backBtn.setToolTipText(stringMgr.getString("navi.button.back.tooltip"));
         backBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!connection.isOnline()) {
-                    GUIUtil.showErrorMessageDialog(s_stringMgr.getString("status.disconnected"), "ERROR");
+                    GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                     return;
                 }
                 try {
@@ -338,12 +338,12 @@ public class DeviceImageFrame extends BaseFrame {
 
         JideButton homeBtn = new JideButton(ICON_HOME);
         homeBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
-        homeBtn.setToolTipText(s_stringMgr.getString("navi.button.home.tooltip"));
+        homeBtn.setToolTipText(stringMgr.getString("navi.button.home.tooltip"));
         homeBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!connection.isOnline()) {
-                    GUIUtil.showErrorMessageDialog(s_stringMgr.getString("status.disconnected"), "ERROR");
+                    GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                     return;
                 }
                 try {
@@ -360,7 +360,7 @@ public class DeviceImageFrame extends BaseFrame {
 
         JideButton wxBtn = new JideButton(ICON_WEIXIN);
         wxBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
-        wxBtn.setToolTipText(s_stringMgr.getString("navi.button.weixin.tooltip"));
+        wxBtn.setToolTipText(stringMgr.getString("navi.button.weixin.tooltip"));
         wxBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -374,7 +374,7 @@ public class DeviceImageFrame extends BaseFrame {
 
         JideButton powerBtn = new JideButton(ICON_POWER);
         powerBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
-        powerBtn.setToolTipText(s_stringMgr.getString("navi.button.power.tooltip"));
+        powerBtn.setToolTipText(stringMgr.getString("navi.button.power.tooltip"));
         powerBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -400,7 +400,7 @@ public class DeviceImageFrame extends BaseFrame {
 
     private void startWx() {
         if (!connection.isOnline()) {
-            GUIUtil.showErrorMessageDialog(s_stringMgr.getString("status.disconnected"), "ERROR");
+            GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
             return;
         }
         try {
@@ -412,7 +412,7 @@ public class DeviceImageFrame extends BaseFrame {
     }
     private void toggleScreenOnOff() {
         if (!connection.isOnline()) {
-            GUIUtil.showErrorMessageDialog(s_stringMgr.getString("status.disconnected"), "ERROR");
+            GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
             return;
         }
         try {
@@ -465,7 +465,7 @@ public class DeviceImageFrame extends BaseFrame {
         @Override
         public void press(int keyCode) {
             if (!DeviceImageFrame.this.connection.isOnline()) {
-                GUIUtil.showErrorMessageDialog(s_stringMgr.getString("status.disconnected"), "ERROR");
+                GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                 return;
             }
             try {
@@ -490,7 +490,7 @@ public class DeviceImageFrame extends BaseFrame {
         public void touchDown(int x, int y) {
             try {
                 if (!DeviceImageFrame.this.connection.isOnline()) {
-                    GUIUtil.showErrorMessageDialog(s_stringMgr.getString("status.disconnected"), "ERROR");
+                    GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                     return;
                 }
                 lastTime = System.currentTimeMillis();
@@ -508,7 +508,7 @@ public class DeviceImageFrame extends BaseFrame {
             }
             try {
                 if (!DeviceImageFrame.this.connection.isOnline()) {
-                    GUIUtil.showErrorMessageDialog(s_stringMgr.getString("status.disconnected"), "ERROR");
+                    GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                     return;
                 }
                 monkeyService.touchUp(DeviceImageFrame.this.connection.getId(), x, y);
@@ -521,7 +521,7 @@ public class DeviceImageFrame extends BaseFrame {
         @Override
         public void touchMove(int x, int y) {
             if (!DeviceImageFrame.this.connection.isOnline()) {
-                GUIUtil.showErrorMessageDialog(s_stringMgr.getString("status.disconnected"), "ERROR");
+                GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                 return;
             }
             try {
@@ -535,7 +535,7 @@ public class DeviceImageFrame extends BaseFrame {
         @Override
         public void scroll(int startx, int starty, int endx, int endy, int steps, long ms) {
             if (!DeviceImageFrame.this.connection.isOnline()) {
-                GUIUtil.showErrorMessageDialog(s_stringMgr.getString("status.disconnected"), "ERROR");
+                GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                 return;
             }
             try {

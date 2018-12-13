@@ -3,7 +3,6 @@ package com.cxplan.projection.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.plugin2.util.SystemUtil;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;

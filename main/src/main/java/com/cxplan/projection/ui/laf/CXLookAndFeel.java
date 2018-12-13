@@ -14,6 +14,7 @@ import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import java.awt.*;
 import java.util.Enumeration;
+import java.util.Locale;
 
 /**
  * @author KennyLiu
@@ -41,8 +42,13 @@ public class CXLookAndFeel extends WebLookAndFeel {
     {
         try
         {
+            Locale systemLocale = Locale.getDefault();
+
             // Installing LookAndFeel
             UIManager.setLookAndFeel ( new CXLookAndFeel() );
+
+            //update locale
+            updateLocale(systemLocale);
 
             // Updating already created components tree
             if ( updateExistingComponents )
@@ -52,7 +58,7 @@ public class CXLookAndFeel extends WebLookAndFeel {
 
             LookAndFeelFactory.installJideExtension();
 
-            Font defaultFont = FontUtil.getDefaultFont(12);
+            Font defaultFont = FontUtil.getDefaultFont(13);
             initGlobalFont(defaultFont);
 
             // LookAndFeel installed successfully
@@ -84,6 +90,16 @@ public class CXLookAndFeel extends WebLookAndFeel {
                 defaults.put("JideButton.font", font);
             }
         });
+    }
+
+    private static void updateLocale(Locale systemLocale) {
+        String lang = systemLocale.getLanguage();
+        if (!lang.equals("zh") &&
+                !lang.equals("en")) {
+            Locale.setDefault(new Locale("en", ""));
+        } else {
+            Locale.setDefault(systemLocale);
+        }
     }
 
     @Override

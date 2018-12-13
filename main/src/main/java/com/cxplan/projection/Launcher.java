@@ -7,6 +7,11 @@ import com.cxplan.projection.core.Application;
 import com.cxplan.projection.core.ServiceFactory;
 import com.cxplan.projection.core.adb.AdbUtil;
 import com.cxplan.projection.core.command.CommandHandlerFactory;
+import com.cxplan.projection.core.connection.IDeviceConnection;
+import com.cxplan.projection.core.setting.ConfigChangedListener;
+import com.cxplan.projection.core.setting.Setting;
+import com.cxplan.projection.core.setting.SettingConstant;
+import com.cxplan.projection.core.setting.SettingEvent;
 import com.cxplan.projection.ui.laf.CXLookAndFeel;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.util.SystemUtil;
@@ -41,6 +46,8 @@ public class Launcher {
         PropertyConfigurator.configure(log4jConfig);
         java.util.logging.Logger.getGlobal().setLevel(Level.WARNING);
 
+        Setting.getInstance().addPropertyChangeListener(new DeviceSettingListener());//load system setting.
+
         try {
             SwingUtilities.invokeAndWait(new Runnable() {
                 @Override
@@ -53,6 +60,7 @@ public class Launcher {
         } catch (InvocationTargetException e) {
             e.printStackTrace();
         }
+
         //2. load service
         Application context = Application.getInstance();
         ServiceFactory.initialize(context, "com.cxplan.projection.service");
@@ -130,5 +138,24 @@ public class Launcher {
             }
         });
 
+    }
+
+    private static class DeviceSettingListener implements ConfigChangedListener {
+
+        @Override
+        public void changed(SettingEvent event) {
+            if (event.isSystemSetting()) {
+                return;
+            }
+
+            if (event.getPropertyName().equals(SettingConstant.KEY_DEVICE_NAME)) {
+               IDeviceConnection connection =  Application.getInstance().getDeviceConnection((String) event.getSource());
+               if (connection == null) {
+                   return;
+               }
+
+               connection.setDeviceName((String) event.getNewValue());
+            }
+        }
     }
 }

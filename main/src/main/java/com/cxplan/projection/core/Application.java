@@ -10,9 +10,12 @@ import com.cxplan.projection.core.connection.DeviceConnectionEvent;
 import com.cxplan.projection.core.connection.DeviceConnectionListener;
 import com.cxplan.projection.core.connection.DeviceReconnectionManager;
 import com.cxplan.projection.core.connection.IDeviceConnection;
+import com.cxplan.projection.core.setting.Setting;
 import com.cxplan.projection.net.DSCodecFactory;
 import com.cxplan.projection.net.DeviceIoHandlerAdapter;
 import com.cxplan.projection.service.IDeviceService;
+import com.cxplan.projection.util.StringUtil;
+import com.cxplan.projection.util.SystemUtil;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.filter.executor.ExecutorFilter;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
@@ -152,6 +155,10 @@ public class Application implements IApplication {
                     return;
                 }
 
+                //load setting
+                Setting.getInstance().loadDeviceSetting(id);
+                SystemUtil.installConfig(deviceConnection);
+
                 //create forward by adb
                 try {
                     int port = ForwardManager.getInstance().putMessageForward(id);
@@ -258,7 +265,12 @@ public class Application implements IApplication {
         if (connection == null) {
             return null;
         }
-        return connection.getDeviceName();
+        if (StringUtil.isEmpty(connection.getDeviceName())) {
+            return connection.getManufacturer() + " " +
+                    connection.getDeviceModel();
+        } else {
+            return connection.getDeviceName();
+        }
     }
 
     public NioSocketConnector getDeviceConnector() {
@@ -358,4 +370,5 @@ public class Application implements IApplication {
 
         deviceConnector = connector;
     }
+
 }
