@@ -59,9 +59,9 @@ public class MessageUtil {
     public static final String CMD_DEVICE_CREATE_SESSION = "d_create";//connect to device.
 
     /**
-     * The command received by hub server
+     * The command received by controller server
      */
-    public static final String CMD_NODE_HUB_INITIALIZE_NODE = "n_initialize_node";//initialize node connection.
+    public static final String CMD_CONTROLLER_IMAGE = "c_image";//The actions related with image channel
 
     public static final int ERROR_TYPE_CODE_NO_PERMISSION = 1;//no permission
     public static final int ERROR_TYPE_CODE_TARGET_MISSED = 2;//target missed.

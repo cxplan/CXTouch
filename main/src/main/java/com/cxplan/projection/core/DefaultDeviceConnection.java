@@ -445,18 +445,14 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         try {
             //start minicap service
             IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
-            int pid = infrastructureService.getMinicapProcessID(getId());
-            if (pid == -1) {
-                //check installation
-                if (!infrastructureService.checkMinicapInstallation(getId())) {
-                    logger.warn("The minicap is not installed: " + getId());
-                    infrastructureService.installMinicap(getId());
-                }
-                //start service.
-                infrastructureService.startMinicapService(getId(), getScreenWidth(), getScreenHeight(), getZoomRate());
+            //check installation
+            if (!infrastructureService.checkMinicapInstallation(getId())) {
+                logger.warn("The minicap is not installed: " + getId());
+                infrastructureService.installMinicap(getId());
             }
-            device.createForward(getImageForwardPort(), ForwardManager.IMAGE_REMOTE_SOCKET_NAME,
-                    IDevice.DeviceUnixSocketNamespace.ABSTRACT);
+//            device.createForward(getImageForwardPort(), ForwardManager.IMAGE_REMOTE_SOCKET_NAME,
+//                    IDevice.DeviceUnixSocketNamespace.ABSTRACT);
+            device.createForward(getImageForwardPort(), 10001);
 
             //set up ADB inputer as default input method.
             checkInputerInstallation();
@@ -466,10 +462,6 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
                     imageChannel.close();
                 } catch (Exception e){}
                 imageChannel = null;
-            }
-
-            if (pid == -1) {
-                Thread.sleep(2000);
             }
 
             SocketChannel imageSocketChannel = SocketChannel.open();

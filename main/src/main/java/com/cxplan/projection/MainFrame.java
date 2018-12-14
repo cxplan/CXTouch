@@ -1,7 +1,6 @@
 package com.cxplan.projection;
 
 import com.alee.global.StyleConstants;
-import com.alee.laf.button.WebButton;
 import com.alee.utils.WebUtils;
 import com.cxplan.projection.core.connection.DeviceConnectionAdapter;
 import com.cxplan.projection.core.connection.DeviceConnectionEvent;
@@ -26,7 +25,6 @@ import info.clearthought.layout.TableLayout;
 
 import javax.swing.*;
 import javax.swing.border.Border;
-import javax.swing.plaf.IconUIResource;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
@@ -38,7 +36,7 @@ import java.util.Map;
  */
 public class MainFrame extends BaseFrame {
 
-    private static final StringManager s_stringMgr =
+    private static final StringManager stringMgr =
             StringManagerFactory.getStringManager(MainFrame.class);
 
     private JPanel deviceListPane;//The panel where all device are placed.
@@ -78,7 +76,7 @@ public class MainFrame extends BaseFrame {
         content.setLayout(new JideBoxLayout(content, JideBoxLayout.PAGE_AXIS, 6));
 
         //device list panel
-        JLabel label = new JLabel(s_stringMgr.getString("panel.title.devicelist"));
+        JLabel label = new JLabel(stringMgr.getString("panel.title.devicelist"));
         content.add(label, JideBoxLayout.FIX);
         Border border = BorderFactory.createLineBorder(StyleConstants.borderColor, 1, true);
         deviceListPane = new JPanel() {
@@ -103,7 +101,7 @@ public class MainFrame extends BaseFrame {
         content.add(Box.createVerticalStrut(30), JideBoxLayout.FIX);
 
         //information
-        String infoLabel = s_stringMgr.getString("panel.title.info");
+        String infoLabel = stringMgr.getString("panel.title.info");
         content.add(new JLabel(infoLabel), JideBoxLayout.FIX);
         content.add(createInfoPane(), JideBoxLayout.FIX);
     }
@@ -126,7 +124,7 @@ public class MainFrame extends BaseFrame {
         pane.setBorder(border);
         pane.setBackground(color);
 
-        String noDeviceText = s_stringMgr.getString("pane.devicelist.nodevice");
+        String noDeviceText = stringMgr.getString("pane.devicelist.nodevice");
         pane.add(new JLabel(noDeviceText));
 
         return pane;
@@ -140,7 +138,7 @@ public class MainFrame extends BaseFrame {
         infoPane.setLayout(new BorderLayout());
 
         //statement: this is a open source software which control and manage android device from PC client.
-        String text = s_stringMgr.getString("info.statement");
+        String text = stringMgr.getString("info.statement");
         JTextArea textArea = new JTextArea(text);
         textArea.setLineWrap(true);
         textArea.setEditable(false);
@@ -149,9 +147,9 @@ public class MainFrame extends BaseFrame {
 
         //ADB driver download
         if (SystemUtil.isWindow()) {
-            String adbDriverPrompt = s_stringMgr.getString("panel.adb.driver.prompt");
-            String driverTitle = s_stringMgr.getString("panel.adb.driver.title");
-            final String driverUrl = s_stringMgr.getString("panel.adb.driver.url");
+            String adbDriverPrompt = stringMgr.getString("panel.adb.driver.prompt");
+            String driverTitle = stringMgr.getString("panel.adb.driver.title");
+            final String driverUrl = stringMgr.getString("panel.adb.driver.url");
             //prompt label
             JLabel promptLabel = new JLabel(adbDriverPrompt);
             //adb driver url label
@@ -192,8 +190,8 @@ public class MainFrame extends BaseFrame {
                 }};
         contactPane.setLayout(new TableLayout(size));
         //project site
-        String projectSiteLabel = s_stringMgr.getString("info.project.site.label");
-        final String projectSiteUrl = s_stringMgr.getString("info.project.site.url");
+        String projectSiteLabel = stringMgr.getString("info.project.site.label");
+        final String projectSiteUrl = stringMgr.getString("info.project.site.url");
         final JLabel pslLabel = new JLabel(projectSiteUrl);
         pslLabel.setForeground(StyleConstants.topFocusedBgColor);
         pslLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -213,12 +211,12 @@ public class MainFrame extends BaseFrame {
         contactPane.add(new JLabel(projectSiteLabel), "1,1");
         contactPane.add(pslLabel, "3,1");
         //author
-        String author = s_stringMgr.getString("info.author");
+        String author = stringMgr.getString("info.author");
         contactPane.add(new JLabel(author), "1,3");
         contactPane.add(new JLabel("Kenny Liu"), "3,3");
         //mail
-        String mailLabel = s_stringMgr.getString("info.mail.label");
-        final String mail = s_stringMgr.getString("info.mail.address");
+        String mailLabel = stringMgr.getString("info.mail.label");
+        final String mail = stringMgr.getString("info.mail.address");
         JLabel mailLinkLabel = new JLabel(mail);
         mailLinkLabel.setForeground(StyleConstants.topFocusedBgColor);
         mailLinkLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -239,7 +237,7 @@ public class MainFrame extends BaseFrame {
         contactPane.add(mailLinkLabel, "3,5");
 
         //version
-        String versionLabel = s_stringMgr.getString("info.version.label");
+        String versionLabel = stringMgr.getString("info.version.label");
         contactPane.add(new JLabel(versionLabel), "1,7");
         contactPane.add(new JLabel("1.0"), "3,7");
 
@@ -251,8 +249,13 @@ public class MainFrame extends BaseFrame {
 
         java.util.List<String> deviceIds = application.getDeviceList();
         for (String id : deviceIds) {
-            IDeviceConnection connection = application.getDeviceConnection(id);
-            addDevice(connection);
+            final IDeviceConnection connection = application.getDeviceConnection(id);
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    addDevice(connection);
+                }
+            });
         }
 
         if (deviceListPane.getComponentCount() == 0) {
@@ -260,16 +263,25 @@ public class MainFrame extends BaseFrame {
         }
     }
 
+    /**
+     * Open device projection window. If the projection window exists already,
+     * return it directly.
+     *
+     * @param connection device connection which will be viewed.
+     */
     private void showImageFrame(IDeviceConnection connection) {
 
-        DeviceImageFrame clientFrame = DeviceImageFrame.getInstance(connection.getId());
+        DeviceImageFrame clientFrame;
+        try {
+            clientFrame = DeviceImageFrame.getInstance(connection.getId(), application, true);
+        } catch (Exception ex) {
+            GUIUtil.showErrorMessageDialog(ex.getMessage(), "ERROR");
+            return;
+        }
         if (clientFrame != null) {
             clientFrame.showWindow();
             return;
         }
-        clientFrame = new DeviceImageFrame(connection, application);
-        clientFrame.showWindow();
-
     }
 
     public void addDevice(IDeviceConnection connection) {
@@ -279,14 +291,13 @@ public class MainFrame extends BaseFrame {
         DeviceComponent dc = new DeviceComponent(connection);
         deviceMap.put(connection.getId(), dc);
 
-        if (deviceListPane.getComponentCount() > 0) {
-            JSeparator separator = new JSeparator(JSeparator.HORIZONTAL);
-            deviceListPane.add(separator);
-        }
         boolean first = deviceListPane.getComponentCount() == 0;
+
         deviceListPane.add(dc, deviceListPane.getComponentCount());
         if (first) {
             deviceOverlayable.setOverlayVisible(false);
+        } else {
+            ((DeviceComponent)deviceListPane.getComponent(deviceListPane.getComponentCount() - 2)).setSeparatorBorder(true);
         }
         deviceListPane.invalidate();
         deviceListPane.revalidate();
@@ -299,9 +310,13 @@ public class MainFrame extends BaseFrame {
         }
 
         int count = deviceListPane.getComponentCount();
+        boolean shouldUpdateBorder = false;
         for (int i = 0; i < count; i++) {
             Component comp = deviceListPane.getComponent(i);
             if (comp == dc) {
+                if (i == (count - 1) && count > 1) {
+                    shouldUpdateBorder = true;
+                }
                 deviceListPane.remove(i);
                 if (i < (count -1)) {
                     deviceListPane.remove(i + 1);
@@ -309,6 +324,10 @@ public class MainFrame extends BaseFrame {
                 deviceListPane.invalidate();
                 deviceListPane.revalidate();
             }
+        }
+
+        if (shouldUpdateBorder) {
+            ((DeviceComponent)deviceListPane.getComponent(count - 2)).setSeparatorBorder(false);
         }
 
         if (deviceListPane.getComponentCount() == 0) {
@@ -326,6 +345,11 @@ public class MainFrame extends BaseFrame {
             }
         }
     }
+
+    private static final Border DEVICE_BORDER_NONE = BorderFactory.createEmptyBorder(2, 5, 2, 2);
+    private static final Border DEVICE_BORDER_SEPARATOR = BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0,0,1,0, StyleConstants.borderColor),
+            DEVICE_BORDER_NONE);
     /**
      * The device item component comprised of device name, serial number,
      * and some operation buttons.
@@ -338,7 +362,7 @@ public class MainFrame extends BaseFrame {
 
         public DeviceComponent(final IDeviceConnection connection) {
             this.connection = connection;
-            setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 2));
+            setBorder(DEVICE_BORDER_NONE);
             Color background = MainFrame.this.getContentPane().getBackground();
             setBackground(background);
             setLayout(new JideBoxLayout(this, JideBoxLayout.LINE_AXIS));
@@ -358,7 +382,7 @@ public class MainFrame extends BaseFrame {
             buttonPanel.setBackground(background);
             //view button
             IconButton viewBtn = new IconButton(IconUtil.getIcon("/image/view.png"));
-            String viewBtnTooltip = s_stringMgr.getString("view.button.tooltip");
+            String viewBtnTooltip = stringMgr.getString("view.button.tooltip");
             viewBtn.setToolTipText(viewBtnTooltip);
             viewBtn.addActionListener(new ActionListener() {
                 @Override
@@ -369,7 +393,7 @@ public class MainFrame extends BaseFrame {
             buttonPanel.add(viewBtn);
             //setting button.
             IconButton settingBtn = new IconButton(IconUtil.getIcon("/image/setting.png"));
-            String settingBtnTooltip = s_stringMgr.getString("setting.button.tooltip");
+            String settingBtnTooltip = stringMgr.getString("setting.button.tooltip");
             settingBtn.setToolTipText(settingBtnTooltip);
             settingBtn.addActionListener(new ActionListener() {
                 @Override
@@ -392,25 +416,43 @@ public class MainFrame extends BaseFrame {
         public void updateName() {
             deviceNameLabel.setText(application.getDeviceName(connection.getId()));
         }
+
+        public void setSeparatorBorder(boolean value) {
+            if (value) {
+                setBorder(DEVICE_BORDER_SEPARATOR);
+            } else {
+                setBorder(DEVICE_BORDER_NONE);
+            }
+        }
     }
 
 
     private class DeviceConnectionChangedListener extends DeviceConnectionAdapter {
         @Override
-        public void created(DeviceConnectionEvent event) {
+        public void created(final DeviceConnectionEvent event) {
             if (!(event.getSource() instanceof IDeviceConnection)) {
                 return;
             }
-            addDevice(event.getSource());
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    addDevice(event.getSource());
+                }
+            });
         }
         @Override
-        public void removed(DeviceConnectionEvent event) {
+        public void removed(final DeviceConnectionEvent event) {
             if (!(event.getSource() instanceof IDeviceConnection)) {
                 return;
             }
 
-            IDeviceConnection removedObj = event.getSource();
-            removeDevice(removedObj);
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    IDeviceConnection removedObj = event.getSource();
+                    removeDevice(removedObj);
+                }
+            });
 
         }
 
@@ -440,6 +482,12 @@ public class MainFrame extends BaseFrame {
 
             if (event.getPropertyName().equals(SettingConstant.KEY_DEVICE_NAME)) {
                 changeDeviceName(event.getSource(), (String) event.getNewValue());
+            } else if (event.getPropertyName().equals(SettingConstant.KEY_DEVICE_ALWAYS_TOP)) {
+                DeviceImageFrame clientFrame = DeviceImageFrame.getInstance(event.getSource(), application, false);
+                if (clientFrame == null) {
+                    return;
+                }
+                clientFrame.setAlwaysOnTop((Boolean)event.getNewValue());
             }
         }
     }

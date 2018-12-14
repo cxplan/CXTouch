@@ -65,7 +65,7 @@ public class ImageSessionManager {
     }
 
     /**
-     * Dispatch image frame to all nodes which accept specified device screen.
+     * Dispatch image frame to all nodes which accept specified device screenT=.
      * @return true: one or more then one nodes are receiving image.
      *         false: there is no node found.
      */

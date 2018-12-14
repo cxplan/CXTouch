@@ -6,6 +6,8 @@ import com.cxplan.projection.core.connection.ConnectStatusListener;
 import com.cxplan.projection.core.connection.DeviceConnectionEvent;
 import com.cxplan.projection.core.connection.DeviceConnectionListener;
 import com.cxplan.projection.core.connection.IDeviceConnection;
+import com.cxplan.projection.core.setting.Setting;
+import com.cxplan.projection.core.setting.SettingConstant;
 import com.cxplan.projection.i18n.StringManager;
 import com.cxplan.projection.i18n.StringManagerFactory;
 import com.cxplan.projection.net.message.MessageException;
@@ -44,21 +46,38 @@ public class DeviceImageFrame extends BaseFrame {
     private static final Logger logger = LoggerFactory.getLogger(DeviceImageFrame.class);
 
     public static final ImageIcon DISCONNECT = IconUtil.getIcon("/resource/image/disconnected.png");
+    public static final ImageIcon WAITING = IconUtil.getIcon("/image/wait.gif");
     public static final ImageIcon ICON_BACK = IconUtil.getIcon("/image/monkey/back.png");
     public static final ImageIcon ICON_HOME = IconUtil.getIcon("/image/monkey/home.png");
     public static final ImageIcon ICON_POWER = IconUtil.getIcon("/image/monkey/power.png");
     public static final ImageIcon ICON_WEIXIN = IconUtil.getIcon("/image/monkey/wx.png");
 
-    private static final int MAX_INSTANCE = 3;
-    private static int instanceCount = 0;
     private static Map<String, DeviceImageFrame> instanceMap = new HashMap<>();
 
-    public static boolean mayBeShow() {
-        return instanceCount < MAX_INSTANCE;
-    }
+    /**
+     * Get a instance of projection window for specified device. If the instance exists already,
+     * return it directly. When instance doesn't exist, if parameter 'create' to true, a new instance
+     * will be created, otherwise a null value will be returned.
+     *
+     * @param deviceId the device ID
+     * @param application application context.
+     * @param create a flag indicates whether a new instance of projection window should
+     *               be created if instance doesn't exist.
+     * @return the instance of projection window, a null value will be returned if the instance
+     *         doesn't exist and parameter 'create' is false.
+     */
+    public static DeviceImageFrame getInstance(String deviceId, IApplication application, boolean create) {
+        DeviceImageFrame instance = instanceMap.get(deviceId);
+        if (instance == null && create) {
+            IDeviceConnection connection = application.getDeviceConnection(deviceId);
+            if (connection == null) {
+                throw new RuntimeException("The device doesn't exist: " + deviceId);
+            }
+            instance = new DeviceImageFrame(connection, application);
+            instanceMap.put(deviceId, instance);
+        }
 
-    public static DeviceImageFrame getInstance(String deviceId) {
-        return instanceMap.get(deviceId);
+        return instance;
     }
 
     private DeviceDisplayPanel clientScreen;
@@ -76,24 +95,35 @@ public class DeviceImageFrame extends BaseFrame {
     //Indicate whether there is no frame received since the image channel is connected.
     private boolean isFirstFrame = true;
 
-    public DeviceImageFrame(IDeviceConnection connection, IApplication application ) {
+    private DeviceImageFrame(IDeviceConnection connection, IApplication application ) {
         super("The device frame: " + application.getDeviceName(connection.getId()) + "(" + connection.getId() + ")");
         if (GUIUtil.mainFrame != null) {
             setIconImage(GUIUtil.mainFrame.getIconImage());
         }
-
+        instanceMap.put(connection.getId(), this);
         this.application = application;
         this.connection = connection;
         monkeyService = application.getDeviceService();
 
         initView();
         installListener();
+
+        setSize(430, 700);
+
+        boolean alwaysTop = Setting.getInstance().getBooleanProperty(connection.getId(),
+                SettingConstant.KEY_DEVICE_ALWAYS_TOP, false);
+        setAlwaysOnTop(alwaysTop);
     }
 
     /**
      * Show screen mapping window instead of using method setVisible(boolean).
      */
     public void showWindow() {
+        if (isVisible()) {
+            setVisible(true);
+            return;
+        }
+
         GUIUtil.centerFrameToFrame(null, this);
         setVisible(true);
         application.removeDeviceConnectionListener(deviceConnectionListener);
@@ -114,7 +144,6 @@ public class DeviceImageFrame extends BaseFrame {
         if (imageThread != null) {
             imageThread.stopShow();
         }
-        instanceCount--;
         instanceMap.remove(connection.getId());
     }
 
@@ -126,9 +155,9 @@ public class DeviceImageFrame extends BaseFrame {
         }
     }
 
-    private void openImageChannel() {
+    public void openImageChannel() {
         if (!connection.isImageChannelAvailable()) {
-            showWaitingTip(stringMgr.getString("status.connecting"), null);
+            showWaitingTip(stringMgr.getString("status.connecting"));
             boolean ret = connection.openImageChannel(new ConnectStatusListener() {
                 @Override
                 public void OnSuccess(IDeviceConnection connection) {
@@ -140,11 +169,11 @@ public class DeviceImageFrame extends BaseFrame {
                 }
             });
             if (ret) {
-                showWaitingTip(stringMgr.getString("status.waitimage"), null);
+                showWaitingTip(stringMgr.getString("status.waitimage"));
                 takeScreenshot();
             }
         } else {
-            showWaitingTip(stringMgr.getString("status.waitimage"), null);
+            showWaitingTip(stringMgr.getString("status.waitimage"));
             takeScreenshot();
         }
     }
@@ -170,12 +199,6 @@ public class DeviceImageFrame extends BaseFrame {
         screenComp.setOverlayVisible(true);
         mainContent.add(screenComp, "1, 1");
 
-//        mainContent.add(createButtonPanel(), "2, 1");
-
-        setSize(430, 700);
-
-        instanceCount++;
-        instanceMap.put(connection.getId(), this);
     }
 
     private void installListener() {
@@ -223,7 +246,7 @@ public class DeviceImageFrame extends BaseFrame {
                 if (event.getType() == DeviceConnectionEvent.ConnectionType.MESSAGE) {
                     openImageChannel();
                 } else if (event.getType() == DeviceConnectionEvent.ConnectionType.IMAGE) {
-                    showWaitingTip(stringMgr.getString("status.waitimage"), null);
+                    showWaitingTip(stringMgr.getString("status.waitimage"));
                     takeScreenshot();
                 }
             }
@@ -386,14 +409,28 @@ public class DeviceImageFrame extends BaseFrame {
         return panel;
     }
 
-    private void showWaitingTip(String text, Icon icon) {
+    public void showWaitingTip(String text) {
+        showWaitingTip(text, WAITING);
+    }
+    /**
+     * Hide screen projection, and show some prompted information
+     *
+     * @param text the information displayed for user.
+     * @param icon the icon object , can be null.
+     */
+    public void showWaitingTip(String text, Icon icon) {
         tipLabel.setText(text);
-        tipLabel.setIcon(icon);
+        if (tipLabel.getIcon() != icon) {
+            tipLabel.setIcon(icon);
+        }
         screenComp.setOverlayVisible(true);
         clientScreen.getCanvas().setVisible(false);
     }
 
-    private void showMonkeyScreen() {
+    /**
+     * Show screen projection, and hide prompted information.
+     */
+    public void showMonkeyScreen() {
         screenComp.setOverlayVisible(false);
         clientScreen.getCanvas().setVisible(true);
     }
