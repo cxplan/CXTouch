@@ -50,7 +50,7 @@ public class ImageProcessThread extends Thread {
         }
 
         try {
-            /*StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.append("version: ").append(input.read());
             sb.append("\nlength: ").append(input.read());
             sb.append("\npid: ").append(CommonUtil.readIntLowEndian(input));
@@ -62,7 +62,7 @@ public class ImageProcessThread extends Thread {
             sb.append("\nvirtual height: ").append(CommonUtil.readIntLowEndian(input));
             sb.append("\nDisplay orientation: ").append(input.read());
             sb.append("\nQuirk bitflags: ").append(input.read());
-            logger.info(sb.toString());*/
+            logger.info(sb.toString());
 
             byte[] buffer = new byte[2048];
             //get fire first frame

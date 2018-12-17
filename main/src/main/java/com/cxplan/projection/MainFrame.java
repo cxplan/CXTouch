@@ -1,7 +1,9 @@
 package com.cxplan.projection;
 
 import com.alee.global.StyleConstants;
+import com.alee.laf.WebLookAndFeel;
 import com.alee.utils.WebUtils;
+import com.cxplan.projection.core.ServiceFactory;
 import com.cxplan.projection.core.connection.DeviceConnectionAdapter;
 import com.cxplan.projection.core.connection.DeviceConnectionEvent;
 import com.cxplan.projection.core.connection.DeviceConnectionListener;
@@ -12,10 +14,12 @@ import com.cxplan.projection.core.setting.SettingConstant;
 import com.cxplan.projection.core.setting.SettingEvent;
 import com.cxplan.projection.i18n.StringManager;
 import com.cxplan.projection.i18n.StringManagerFactory;
+import com.cxplan.projection.service.IInfrastructureService;
 import com.cxplan.projection.ui.DeviceImageFrame;
 import com.cxplan.projection.ui.DeviceSettingDialog;
 import com.cxplan.projection.ui.component.BaseFrame;
 import com.cxplan.projection.ui.component.IconButton;
+import com.cxplan.projection.ui.laf.CXLookAndFeel;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.ui.util.IconUtil;
 import com.cxplan.projection.util.SystemUtil;
@@ -271,6 +275,12 @@ public class MainFrame extends BaseFrame {
      */
     private void showImageFrame(IDeviceConnection connection) {
 
+        if (!connection.isConnected()) {
+            String notPreparedText = stringMgr.getString("mainframe.device.not.prepared");
+            GUIUtil.showErrorMessageDialog(notPreparedText);
+            return;
+        }
+
         DeviceImageFrame clientFrame;
         try {
             clientFrame = DeviceImageFrame.getInstance(connection.getId(), application, true);
@@ -282,6 +292,7 @@ public class MainFrame extends BaseFrame {
             clientFrame.showWindow();
             return;
         }
+
     }
 
     public void addDevice(IDeviceConnection connection) {
@@ -430,9 +441,6 @@ public class MainFrame extends BaseFrame {
     private class DeviceConnectionChangedListener extends DeviceConnectionAdapter {
         @Override
         public void created(final DeviceConnectionEvent event) {
-            if (!(event.getSource() instanceof IDeviceConnection)) {
-                return;
-            }
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
@@ -442,10 +450,6 @@ public class MainFrame extends BaseFrame {
         }
         @Override
         public void removed(final DeviceConnectionEvent event) {
-            if (!(event.getSource() instanceof IDeviceConnection)) {
-                return;
-            }
-
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
@@ -463,12 +467,20 @@ public class MainFrame extends BaseFrame {
 
         @Override
         public void connected(DeviceConnectionEvent event) {
-
+            //send image projection event
+            if (event.getType() == DeviceConnectionEvent.ConnectionType.IMAGE) {
+                IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
+                infrastructureService.notifyProjectionFlag(event.getSource().getId(), true);
+            }
         }
 
         @Override
         public void connectionClosed(DeviceConnectionEvent event) {
-
+            //send image projection event
+            if (event.getType() == DeviceConnectionEvent.ConnectionType.IMAGE) {
+                IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
+                infrastructureService.notifyProjectionFlag(event.getSource().getId(), false);
+            }
         }
     }
 
@@ -488,6 +500,12 @@ public class MainFrame extends BaseFrame {
                     return;
                 }
                 clientFrame.setAlwaysOnTop((Boolean)event.getNewValue());
+            } else if (event.getPropertyName().equals(SettingConstant.KEY_DEVICE_NAVI_VISIBLE)) {
+                DeviceImageFrame clientFrame = DeviceImageFrame.getInstance(event.getSource(), application, false);
+                if (clientFrame == null) {
+                    return;
+                }
+                clientFrame.setNavigationBarVisible((Boolean)event.getNewValue());
             }
         }
     }

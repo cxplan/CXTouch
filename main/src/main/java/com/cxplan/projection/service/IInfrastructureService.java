@@ -1,6 +1,7 @@
 package com.cxplan.projection.service;
 
 import com.android.ddmlib.IDevice;
+import com.cxplan.projection.net.message.MessageException;
 
 
 /**
@@ -36,11 +37,8 @@ public interface IInfrastructureService {
 
     /**
      * Start minicap service on specified device.
-     * @param width the width of device screen.
-     * @param height the height of device screen.
-     * @param scale the rate of zooming out/in device screen.
      */
-    void startMinicapService(String deviceId, int width, int height, double scale);
+    void startMinicapService(String deviceId) throws MessageException;
 
     /**
      * Set specified inputer as default inputer on device.
@@ -48,5 +46,12 @@ public interface IInfrastructureService {
      * @param inputerId the id of inputer.
      */
     void switchInputer(String deviceId, String inputerId);
+
+    /**
+     * Notify device the projection work is in progress.
+     * @param deviceId device ID.
+     * @param inProjection the flag whether the projection work is in progress.
+     */
+    void notifyProjectionFlag(String deviceId, boolean inProjection);
 
 }

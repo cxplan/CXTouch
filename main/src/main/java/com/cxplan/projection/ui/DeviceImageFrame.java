@@ -1,5 +1,6 @@
 package com.cxplan.projection.ui;
 
+import com.alee.extended.window.ComponentMoveAdapter;
 import com.cxplan.projection.IApplication;
 import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.core.connection.ConnectStatusListener;
@@ -12,23 +13,19 @@ import com.cxplan.projection.i18n.StringManager;
 import com.cxplan.projection.i18n.StringManagerFactory;
 import com.cxplan.projection.net.message.MessageException;
 import com.cxplan.projection.service.IDeviceService;
-import com.cxplan.projection.ui.component.BaseFrame;
+import com.cxplan.projection.ui.component.BaseWebFrame;
 import com.cxplan.projection.ui.component.monkey.MonkeyInputListener;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.ui.util.IconUtil;
 import com.cxplan.projection.util.ImageUtil;
 import com.jidesoft.swing.DefaultOverlayable;
 import com.jidesoft.swing.JideButton;
-import info.clearthought.layout.TableLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +36,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  *
  * @author kenny
  */
-public class DeviceImageFrame extends BaseFrame {
+public class DeviceImageFrame extends BaseWebFrame {
     private static final StringManager stringMgr =
             StringManagerFactory.getStringManager(DeviceImageFrame.class);
 
@@ -94,9 +91,11 @@ public class DeviceImageFrame extends BaseFrame {
 
     //Indicate whether there is no frame received since the image channel is connected.
     private boolean isFirstFrame = true;
+    private int currentImageWidth = -1;
+    private int currentImageHeight = -1;
 
     private DeviceImageFrame(IDeviceConnection connection, IApplication application ) {
-        super("The device frame: " + application.getDeviceName(connection.getId()) + "(" + connection.getId() + ")");
+        super(application.getDeviceName(connection.getId()) + "(" + connection.getId() + ")");
         if (GUIUtil.mainFrame != null) {
             setIconImage(GUIUtil.mainFrame.getIconImage());
         }
@@ -107,8 +106,6 @@ public class DeviceImageFrame extends BaseFrame {
 
         initView();
         installListener();
-
-        setSize(430, 700);
 
         boolean alwaysTop = Setting.getInstance().getBooleanProperty(connection.getId(),
                 SettingConstant.KEY_DEVICE_ALWAYS_TOP, false);
@@ -123,7 +120,7 @@ public class DeviceImageFrame extends BaseFrame {
             setVisible(true);
             return;
         }
-
+        calculateFrameSize();
         GUIUtil.centerFrameToFrame(null, this);
         setVisible(true);
         application.removeDeviceConnectionListener(deviceConnectionListener);
@@ -145,6 +142,16 @@ public class DeviceImageFrame extends BaseFrame {
             imageThread.stopShow();
         }
         instanceMap.remove(connection.getId());
+    }
+
+    public void setNavigationBarVisible(boolean visible) {
+        if (visible) {
+            clientScreen.showExtComponent();
+            changeFrameSize();
+        } else {
+            clientScreen.hideExtComponent();
+            changeFrameSize();
+        }
     }
 
     private void openScreenProjection() {
@@ -179,26 +186,40 @@ public class DeviceImageFrame extends BaseFrame {
     }
 
     private void initView() {
-        double b=10;
-        double[][] size=new double[][]{{b,400,TableLayout.FILL,b},
-                {b,
-                        TableLayout.FILL,b}};
+        ComponentMoveAdapter.install ( getRootPane (), DeviceImageFrame.this );
+        setShowResizeCorner(true);
+
         JPanel mainContent = (JPanel)getContentPane();
-        mainContent.setLayout(new TableLayout((size)));
+        mainContent.setLayout(new BorderLayout());
 
         clientScreen = new DeviceDisplayPanel(getGraphicsConfiguration(), monkeyInputListener);
+        clientScreen.setBorder(BorderFactory.createEmptyBorder());
         clientScreen.setBackground(Color.gray);
         clientScreen.setDeviceZoomRate(connection.getZoomRate());
         clientScreen.setExtComponent(createDeviceButtonPanel());
-        clientScreen.getCanvas().setVisible(false);
         screenComp = new DefaultOverlayable(clientScreen);
-        screenComp.setBackground(clientScreen.getBackground());
+        screenComp.setBorder(BorderFactory.createEmptyBorder());
         tipLabel = new JLabel();
         screenComp.addOverlayComponent(tipLabel,
                 SwingConstants.CENTER);
         screenComp.setOverlayVisible(true);
-        mainContent.add(screenComp, "1, 1");
+        mainContent.add(screenComp, BorderLayout.CENTER);
 
+        boolean showNaviBar = Setting.getInstance().getBooleanProperty(connection.getId(),
+                SettingConstant.KEY_DEVICE_NAVI_VISIBLE, true);
+        if (showNaviBar) {
+            clientScreen.showExtComponent();
+        } else {
+            clientScreen.hideExtComponent();
+        }
+    }
+
+    private void calculateFrameSize() {
+        int prefHeight = (int) (connection.getScreenWidth() * connection.getZoomRate());
+        int prefWidth = (int) (connection.getScreenHeight() * connection.getZoomRate());
+
+        checkImageSizeChanged(prefWidth, prefHeight);
+        clientScreen.getCanvas().setVisible(false);
     }
 
     private void installListener() {
@@ -212,6 +233,7 @@ public class DeviceImageFrame extends BaseFrame {
                 if(!isFirstFrame && !DeviceImageFrame.this.isFocused()) {
                     return true;
                 } else if (isFirstFrame) {
+                    imageQueue.clear();
                     showScreenResult();
                 }
 
@@ -294,6 +316,13 @@ public class DeviceImageFrame extends BaseFrame {
             }
         };
 
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+//                clientScreen.refreshImage();
+            }
+        });
+
         addWindowListener(new WindowAdapter() {
 
             @Override
@@ -302,6 +331,7 @@ public class DeviceImageFrame extends BaseFrame {
             }
         });
     }
+
 
     private void showScreenResult() {
         isFirstFrame = true;
@@ -314,12 +344,9 @@ public class DeviceImageFrame extends BaseFrame {
     }
 
     private void takeScreenshot() {
-        double rate = connection.getZoomRate();
-        int realWidth = (int)(connection.getScreenWidth() * rate);
-        int realHeight = (int)(connection.getScreenHeight() * rate);
         Image image;
         try {
-            image = monkeyService.takeScreenshot(connection.getId(), realHeight, realWidth);
+            image = monkeyService.takeScreenshot(connection.getId(), currentImageWidth, currentImageHeight);
         } catch (MessageException e) {
             logger.error(e.getMessage(), e);
             GUIUtil.showErrorMessageDialog(e.getMessage());
@@ -334,7 +361,8 @@ public class DeviceImageFrame extends BaseFrame {
     private JPanel createDeviceButtonPanel() {
         int gap = 40;
         JPanel panel = new JPanel();
-        panel.setBackground(Color.GRAY);
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder());
         panel.setLayout(new FlowLayout(FlowLayout.CENTER));
 
         JideButton backBtn = new JideButton(ICON_BACK);
@@ -459,8 +487,6 @@ public class DeviceImageFrame extends BaseFrame {
         }
     }
 
-    private long lastTime;
-
     private class ShowImageThread extends Thread {
         boolean running;
         public ShowImageThread() {
@@ -494,8 +520,38 @@ public class DeviceImageFrame extends BaseFrame {
                 }
 
                 clientScreen.showImage(image);
+                checkImageSizeChanged(image.getWidth(null), image.getHeight(null));
             }
         }
+    }
+
+    private void checkImageSizeChanged(int newWidth, int newHeight) {
+        if (currentImageWidth != newWidth || currentImageHeight != newHeight) {
+            currentImageHeight = newHeight;
+            currentImageWidth = newWidth;
+            changeFrameSize();
+        }
+    }
+    private void changeFrameSize() {
+        int maxHeight = (int) (Toolkit.getDefaultToolkit().getScreenSize().height * 0.7);
+        int optimalWidth = currentImageWidth;
+        int optimalHeight = currentImageHeight;
+        if (optimalHeight > maxHeight) {
+            optimalWidth = (int)((double)maxHeight * optimalWidth / optimalHeight);
+            optimalHeight = maxHeight;
+        }
+        clientScreen.setCanvasSize(optimalWidth, optimalHeight);
+
+        Dimension dim = clientScreen.getPreferredSize();
+        if (getContentPane().isVisible() && getContentPane().isShowing()) {
+            int hgap = getWidth() - getContentPane().getWidth();
+            int vgap = getHeight() - getContentPane().getHeight();
+            dim.width += hgap;
+            dim.height += vgap;
+        }
+//        setSize(dim);
+        pack();
+        System.out.println("Frame size is changed:[" + getWidth() + "," + getHeight() + "]");
     }
 
     MonkeyInputListener monkeyInputListener = new MonkeyInputListener() {
@@ -530,7 +586,6 @@ public class DeviceImageFrame extends BaseFrame {
                     GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                     return;
                 }
-                lastTime = System.currentTimeMillis();
                 monkeyService.touchDown(DeviceImageFrame.this.connection.getId(), x, y);
             } catch (Exception e1) {
                 logger.error("[" + DeviceImageFrame.this.connection.getId() + "]Touching down failed:" + e1.getMessage(), e1);
@@ -540,9 +595,6 @@ public class DeviceImageFrame extends BaseFrame {
 
         @Override
         public void touchUp(int x, int y) {
-            if (System.currentTimeMillis() - lastTime > 1000) {
-                return;
-            }
             try {
                 if (!DeviceImageFrame.this.connection.isOnline()) {
                     GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");

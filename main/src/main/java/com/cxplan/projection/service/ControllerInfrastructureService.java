@@ -5,6 +5,10 @@ import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.core.CXService;
 import com.cxplan.projection.core.DefaultDeviceConnection;
 import com.cxplan.projection.core.adb.AdbUtil;
+import com.cxplan.projection.core.connection.ClientConnection;
+import com.cxplan.projection.core.connection.IDeviceConnection;
+import com.cxplan.projection.core.setting.Setting;
+import com.cxplan.projection.core.setting.SettingConstant;
 import com.cxplan.projection.net.message.Message;
 import com.cxplan.projection.net.message.MessageException;
 import com.cxplan.projection.net.message.MessageUtil;
@@ -155,7 +159,7 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
 
     @Override
     public int getMinicapProcessID(String deviceId) {
-        DefaultDeviceConnection connection = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
+        IDeviceConnection connection = application.getDeviceConnection(deviceId);
         if (connection == null) {
             throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
         }
@@ -176,16 +180,27 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
     }
 
     @Override
-    public void startMinicapService(final String deviceId, int width, int height, double scale) {
-        final DefaultDeviceConnection connection = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
+    public void startMinicapService(final String deviceId) throws MessageException{
+        final IDeviceConnection connection = application.getDeviceConnection(deviceId);
         if (connection == null) {
             throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
         }
+
+        int imageQuality = Setting.getInstance().getIntProperty(deviceId,
+                SettingConstant.KEY_DEVICE_IMAGE_QUALITY, SettingConstant.DEFAULT_IMAGE_QUALITY);
+        float zoomRate = Setting.getInstance().getFloatProperty(deviceId,
+                SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE, SettingConstant.DEFAULT_ZOOM_RATE);
+        Message message = new Message(MessageUtil.CMD_DEVICE_IMAGE);
+        message.setParameter("type", (short)3);
+        message.setParameter("iq", imageQuality);
+        message.setParameter("zr", zoomRate);
+
+        MessageUtil.request((ClientConnection) connection, message, 5000);
     }
 
     @Override
     public void switchInputer(String deviceId, String inputerId) {
-        DefaultDeviceConnection connection = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
+        IDeviceConnection connection = application.getDeviceConnection(deviceId);
         if (connection == null) {
             throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
         }
@@ -193,7 +208,16 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
             return;
         }
 
-        String cmd = "ime set " + inputerId;
+        //enable
+        String cmd = "ime enable " + inputerId;
+        try {
+            AdbUtil.shell(cmd, connection.getDevice());
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return;
+        }
+        //set
+        cmd = "ime set " + inputerId;
         try {
             AdbUtil.shell(cmd, connection.getDevice());
         } catch (Exception e) {
@@ -205,6 +229,22 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
         Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
         message.setParameter("isTouchIME", CommonUtil.TOUCH_INPUTER.equals(inputerId));
         message.setParameter("type", MonkeyConstant.MONKEY_SWITCH_INPUTER);
+        try {
+            connection.sendMessage(message);
+        } catch (MessageException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void notifyProjectionFlag(String deviceId, boolean inProjection) {
+        IDeviceConnection connection = application.getDeviceConnection(deviceId);
+        if (connection == null) {
+            throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
+        }
+
+        Message message = new Message(MessageUtil.CMD_DEVICE_IMAGE);
+        message.setParameter("type", inProjection ? (short)1 : (short)2);
         try {
             connection.sendMessage(message);
         } catch (MessageException e) {

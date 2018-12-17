@@ -135,15 +135,6 @@ public class Application implements IApplication {
 
                 DefaultDeviceConnection deviceConnection;
                 try {
-                    try {
-                        boolean ret = device.root();
-                        if (!ret) {
-                            logger.error("root[{}] failed:", id);
-                        }
-                    } catch (Exception ex) {
-                        logger.error("device root failed: " + ex.getMessage() + ", id:" + id, ex);
-                    }
-
                     deviceConnection = new DefaultDeviceConnection(id, device);
                     deviceMap.put(id, deviceConnection);
 

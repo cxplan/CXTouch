@@ -57,6 +57,7 @@ public class MessageUtil {
     public static final String CMD_DEVICE_MONKEY = "d_m";//execute a monkey command.
     public static final String CMD_DEVICE_LOCATE = "d_locate";//locate device.
     public static final String CMD_DEVICE_CREATE_SESSION = "d_create";//connect to device.
+    public static final String CMD_DEVICE_IMAGE = "c_image";//Tell device something about image channel.
 
     /**
      * The command received by controller server

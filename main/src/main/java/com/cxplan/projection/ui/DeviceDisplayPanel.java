@@ -11,7 +11,6 @@ import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_ProfileRGB;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 
@@ -66,11 +65,11 @@ public class DeviceDisplayPanel extends JPanel {
     public DeviceDisplayPanel(GraphicsConfiguration gc, DisplayMode displayMode, double gamma, MonkeyInputListener inputListener) {
         super();
 
-        double[][] size=new double[][]{{TableLayout.FILL},
-                {TableLayout.FILL,
-                        TableLayout.PREFERRED,
-                }};
-        setLayout(new TableLayout(size));
+//        double[][] size=new double[][]{{TableLayout.FILL},
+//                {TableLayout.FILL,
+//                        TableLayout.PREFERRED,
+//                }};
+        setLayout(new BorderLayout());
 
         doInit(gc, displayMode, gamma, inputListener);
         addComponentListener(new ComponentListener() {
@@ -100,9 +99,6 @@ public class DeviceDisplayPanel extends JPanel {
 //        doInit(displayMode, gamma);
 //    }
     private void doInit(final GraphicsConfiguration gc, final DisplayMode displayMode, final double gamma, MonkeyInputListener inputListener) {
-        KeyboardFocusManager.getCurrentKeyboardFocusManager().
-                addKeyEventDispatcher(keyEventDispatch);
-
         GraphicsDevice gd = gc.getDevice();
         DisplayMode d = gd.getDisplayMode(), d2 = null;
         if (displayMode != null && d != null) {
@@ -159,9 +155,9 @@ public class DeviceDisplayPanel extends JPanel {
 
         canvas.setSize(1,1); // mac bug
 
-        add(canvas, "0, 0, c, t");
+//        add(canvas, "0, 0, c, t");
+        add(canvas, BorderLayout.CENTER);
         canvas.setVisible(true);
-//        canvas.createBufferStrategy(3);
 
     }
 
@@ -200,25 +196,6 @@ public class DeviceDisplayPanel extends JPanel {
         } catch (IllegalStateException e) { }
     }
 
-    // Latency is about 60 ms on Metacity and Windows XP, and 90 ms on Compiz Fusion,
-    // but we set the default to twice as much to take into account the roundtrip
-    // camera latency as well, just to be sure
-    public static final long DEFAULT_LATENCY = 200;
-    private long latency = DEFAULT_LATENCY;
-
-    private KeyEvent keyEvent = null;
-    private KeyEventDispatcher keyEventDispatch = new KeyEventDispatcher() {
-        public boolean dispatchKeyEvent(KeyEvent e) {
-            if (e.getID() == KeyEvent.KEY_PRESSED) {
-                synchronized (DeviceDisplayPanel.this) {
-                    keyEvent = e;
-                    DeviceDisplayPanel.this.notify();
-                }
-            }
-            return false;
-        }
-    };
-
     protected JComponent extComp;
     protected Canvas canvas = null;
     protected double initialScale = 1.0;
@@ -233,33 +210,44 @@ public class DeviceDisplayPanel extends JPanel {
             remove(extComp);
         }
         extComp = comp;
-        add(extComp, "0, 1, c, t");
+//        add(extComp, "0, 1, c, t");
+        add(extComp, BorderLayout.SOUTH);
 
     }
 
-    public long getLatency() {
-        // if there exists some way to estimate the latency in real time,
-        // add it here
-        return latency;
-    }
-    public void setLatency(long latency) {
-        this.latency = latency;
-    }
-    public void waitLatency() throws InterruptedException {
-        Thread.sleep(getLatency());
-    }
-
-    public KeyEvent waitKey() throws InterruptedException {
-        return waitKey(0);
-    }
-    public synchronized KeyEvent waitKey(int delay) throws InterruptedException {
-        if (delay >= 0) {
-            keyEvent = null;
-            wait(delay);
+    public void showExtComponent() {
+        if (extComp != null && extComp.getParent() == null) {
+            add(extComp, BorderLayout.SOUTH);
         }
-        KeyEvent e = keyEvent;
-        keyEvent = null;
-        return e;
+    }
+
+    public void hideExtComponent() {
+        if (extComp != null) {
+            remove(extComp);
+        }
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        Dimension dim = new Dimension();
+        Insets insets = getInsets();
+
+        dim.width = insets.left + insets.right;
+        dim.height = insets.top + insets.bottom;
+
+        int canvasWidth = canvas.getWidth();
+        int canvasHeight = canvas.getHeight();
+        dim.height += canvasHeight;
+
+        if (extComp != null && getComponentZOrder(extComp) > -1) {
+            Dimension extPreSize = extComp.getPreferredSize();
+            dim.width += Math.max(canvasWidth, extPreSize.width);
+            dim.height += extPreSize.height;
+        } else {
+            dim.width += canvasWidth;
+        }
+
+        return dim;
     }
 
     public Canvas getCanvas() {
@@ -288,6 +276,8 @@ public class DeviceDisplayPanel extends JPanel {
 
             canvas.setSize(width+1, height+1);
             canvas.setSize(width, height);
+
+            System.out.println("canvas size: " + width + "," + height);
         }};
 
         if (EventQueue.isDispatchThread()) {
@@ -327,9 +317,9 @@ public class DeviceDisplayPanel extends JPanel {
      *               the image should zoom in to fit canvas.
      */
     protected void updatePreferredScale(int imageWidth, int imageHeight, boolean isFill) {
-        int width = getWidth() - 4;
-        int height = getHeight() - 4;
-        if (extComp != null) {
+        int width = getWidth();
+        int height = getHeight();
+        if (extComp != null && extComp.getParent() == this && extComp.isShowing()) {
             height -= extComp.getHeight();
         }
 
@@ -420,18 +410,22 @@ public class DeviceDisplayPanel extends JPanel {
             if (forceCanvasResize) {
                 forceCanvasResize = false;
             }
-            System.out.println("update canvas size*******[canvas:" + canvas.getWidth() + "," + canvas.getHeight() + "] [after:" +(int)(imageWidth * initialScale) + "," + (int)(imageHeight * initialScale) + "]");
             updatePreferredScale(imageWidth, imageHeight, true);
         }
 
         this.color = null;
         if (imageWidth != canvas.getWidth() ||
                 imageHeight != canvas.getHeight()) {
-            this.image = image.getScaledInstance(canvas.getWidth(), canvas.getHeight(), Image.SCALE_AREA_AVERAGING);
+            this.image = image.getScaledInstance(canvas.getWidth(), canvas.getHeight(), Image.SCALE_SMOOTH);
         } else {
             this.image = image;
         }
         canvas.repaint();
+    }
+
+    public void refreshImage() {
+        forceCanvasResize = true;
+        showImage(this.image);
     }
 
 }

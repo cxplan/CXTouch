@@ -7,6 +7,8 @@ import com.cxplan.projection.core.image.ControllerImageSession;
 import com.cxplan.projection.core.image.ImageProcessThread;
 import com.cxplan.projection.core.image.ImageSessionID;
 import com.cxplan.projection.core.image.ImageSessionManager;
+import com.cxplan.projection.core.setting.Setting;
+import com.cxplan.projection.core.setting.SettingConstant;
 import com.cxplan.projection.model.DeviceInfo;
 import com.cxplan.projection.model.IDeviceMeta;
 import com.cxplan.projection.net.DeviceIoHandlerAdapter;
@@ -298,6 +300,8 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
             infrastructureService.startMainProcess(device);
 
+            Thread.sleep(1000);
+
             long timeout = 10000;//connect timeout
             int forwardPort = getMessageForwardPort();
             NioSocketConnector connector = Application.getInstance().getDeviceConnector();
@@ -328,6 +332,12 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             }
 
             Message createMsg = new Message(MessageUtil.CMD_DEVICE_CREATE_SESSION);
+            int imageQuality = Setting.getInstance().getIntProperty(getId(),
+                    SettingConstant.KEY_DEVICE_IMAGE_QUALITY, SettingConstant.DEFAULT_IMAGE_QUALITY);
+            float zoomRate = Setting.getInstance().getFloatProperty(getId(),
+                    SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE, SettingConstant.DEFAULT_ZOOM_RATE);
+            createMsg.setParameter("iq", imageQuality);
+            createMsg.setParameter("zr", zoomRate);
             try {
                 if (wait) {
                     Message retMsg = MessageUtil.request(this, createMsg, 5000);
@@ -450,12 +460,24 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
                 logger.warn("The minicap is not installed: " + getId());
                 infrastructureService.installMinicap(getId());
             }
-//            device.createForward(getImageForwardPort(), ForwardManager.IMAGE_REMOTE_SOCKET_NAME,
-//                    IDevice.DeviceUnixSocketNamespace.ABSTRACT);
-            device.createForward(getImageForwardPort(), 10001);
+            //start minicap service
+            infrastructureService.startMinicapService(getId());
+            device.createForward(getImageForwardPort(), ForwardManager.IMAGE_REMOTE_SOCKET_NAME,
+                    IDevice.DeviceUnixSocketNamespace.ABSTRACT);
 
             //set up ADB inputer as default input method.
+            //TODO is necessary, a restore action is needed also.
             checkInputerInstallation();
+
+            //check minicap process
+            int pid = infrastructureService.getMinicapProcessID(getId());
+            int count = 0;
+            while (pid < 0 && count < 30) {
+                count++;
+                Thread.sleep(200);
+                pid = infrastructureService.getMinicapProcessID(getId());
+            }
+            logger.info("The minicap process is started: {}", getId());
 
             if (imageChannel != null) {
                 try {

@@ -258,7 +258,7 @@ public class ReconnectionManager {
          */
         private int timeDelay() {
             attempts++;
-            if (attempts == 1) {
+            if (attempts < 3) {
                 return 1;
             } else if (attempts < 100) {
                 return 5;

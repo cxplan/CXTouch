@@ -1,6 +1,9 @@
 package com.cxplan.projection.core.connection;
 
+import com.android.ddmlib.IDevice;
 import com.cxplan.projection.model.IDeviceMeta;
+import com.cxplan.projection.net.message.Message;
+import com.cxplan.projection.net.message.MessageException;
 import org.apache.mina.core.session.IoSession;
 
 import java.nio.channels.SocketChannel;
@@ -20,6 +23,18 @@ public interface IDeviceConnection extends IDeviceMeta {
 
     IDeviceMeta getDeviceMeta();
 
+    /**
+     * Return the device SDK handle object.
+     */
+    IDevice getDevice();
+
+    /**
+     * Send message to device.
+     *
+     * @param message message object.
+     * @throws MessageException
+     */
+    void sendMessage(Message message) throws MessageException;
     /**
      * Return the unique identifier of this connection.
      */

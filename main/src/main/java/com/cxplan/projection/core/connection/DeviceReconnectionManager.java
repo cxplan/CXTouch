@@ -19,7 +19,9 @@ public class DeviceReconnectionManager extends ReconnectionManager implements De
 
     @Override
     public void connectionClosed(DeviceConnectionEvent event) {
-        addConnection((ClientConnection) event.getSource());
+        if (event.getType() == DeviceConnectionEvent.ConnectionType.MESSAGE) {
+            addConnection((ClientConnection) event.getSource());
+        }
     }
 
     @Override
