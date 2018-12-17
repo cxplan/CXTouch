@@ -89,60 +89,90 @@ public class Setting {
         return this.systemProp.getLongProperty(property, defaultValue);
     }
     //--------------------device setting------------------------
-    public void putProperty(String deviceId, String name, String value) {
+    public boolean putProperty(String deviceId, String name, String value) {
         if (StringUtil.isEmpty(deviceId)) {
-            return;
+            return false;
         }
         ParamProperties properties = devicePropMap.get(deviceId);
         if (properties == null) {
             properties = new ParamProperties(deviceId);
             devicePropMap.put(deviceId, properties);
         }
-        properties.setProperty(name, value);
+        String oldValue = properties.setProperty(name, value);
+
+        if (oldValue != null && value != null && oldValue.equals(value)) {
+            return false;
+        } else {
+            return true;
+        }
     }
-    public void putBooleanProperty(String deviceId, String name, boolean value) {
+    public boolean putBooleanProperty(String deviceId, String name, boolean value) {
         if (StringUtil.isEmpty(deviceId)) {
-            return;
+            return false;
         }
         ParamProperties properties = devicePropMap.get(deviceId);
         if (properties == null) {
             properties = new ParamProperties(deviceId);
             devicePropMap.put(deviceId, properties);
         }
-        properties.setBooleanProperty(name, value);
+        Boolean oldValue = properties.setBooleanProperty(name, value);
+        Boolean newValue = value;
+        if (oldValue != null && oldValue.equals(newValue)) {
+            return false;
+        } else {
+            return true;
+        }
     }
-    public void putIntProperty(String deviceId, String name, int value) {
+    public boolean putIntProperty(String deviceId, String name, int value) {
         if (StringUtil.isEmpty(deviceId)) {
-            return;
+            return false;
         }
         ParamProperties properties = devicePropMap.get(deviceId);
         if (properties == null) {
             properties = new ParamProperties(deviceId);
             devicePropMap.put(deviceId, properties);
         }
-        properties.setIntProperty(name, value);
+        Integer oldValue = properties.setIntProperty(name, value);
+        Integer newValue = value;
+        if (oldValue != null && oldValue.equals(newValue)) {
+            return false;
+        } else {
+            return true;
+        }
     }
-    public void putFloatProperty(String deviceId, String name, float value) {
+    public boolean putFloatProperty(String deviceId, String name, float value) {
         if (StringUtil.isEmpty(deviceId)) {
-            return;
+            return false;
         }
         ParamProperties properties = devicePropMap.get(deviceId);
         if (properties == null) {
             properties = new ParamProperties(deviceId);
             devicePropMap.put(deviceId, properties);
         }
-        properties.setFloatProperty(name, value);
+        Float oldValue = properties.setFloatProperty(name, value);
+        Float newValue = value;
+        if (oldValue != null && oldValue.equals(newValue)) {
+            return false;
+        } else {
+            return true;
+        }
     }
-    public void putLongProperty(String deviceId, String name, long value) {
+    public boolean putLongProperty(String deviceId, String name, long value) {
         if (StringUtil.isEmpty(deviceId)) {
-            return;
+            return false;
         }
         ParamProperties properties = devicePropMap.get(deviceId);
         if (properties == null) {
             properties = new ParamProperties(deviceId);
             devicePropMap.put(deviceId, properties);
         }
-        properties.setLongProperty(name, value);
+        Long oldValue = properties.setLongProperty(name, value);
+        Long newValue = value;
+        if (oldValue != null && oldValue.equals(newValue)) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     public String getProperty(String deviceId, String aProperty, String aDefault) {
@@ -206,12 +236,29 @@ public class Setting {
 
     void firePropertyChanged(String deviceId, String name, Object oldValue,
                                      Object newValue) {
+        if (oldValue != null && newValue != null && oldValue.equals(newValue)) {
+            return;
+        }
         if (listenerList.size() == 0) {
             return;
         }
         // Making a shallow copy of the list prevents a
         // ConcurrentModificationException
         SettingEvent event = new SettingEvent(deviceId, name, oldValue, newValue);
+        for (ConfigChangedListener l : listenerList) {
+            l.changed(event);
+        }
+    }
+    public void fireSettingResult(String deviceId, String[] changedKeys) {
+        if (changedKeys == null || changedKeys.length == 0) {
+            return;
+        }
+        if (listenerList.size() == 0) {
+            return;
+        }
+        // Making a shallow copy of the list prevents a
+        // ConcurrentModificationException
+        SettingEvent event = new SettingEvent(deviceId, changedKeys);
         for (ConfigChangedListener l : listenerList) {
             l.changed(event);
         }

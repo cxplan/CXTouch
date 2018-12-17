@@ -14,10 +14,8 @@ import com.jidesoft.swing.JideBoxLayout;
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
+import java.util.ArrayList;
 
 /**
  * @author Kenny
@@ -136,8 +134,9 @@ public class DeviceSettingDialog extends BaseDialog {
         pane.add(Box.createVerticalStrut(20), JideBoxLayout.FIX);
 
         //Zoom rate
-        String zoomRateLabel = stringMgr.getString("device.setting.image.zoomrate.label");
-        pane.add(new JLabel(zoomRateLabel), JideBoxLayout.FIX);
+        final String zoomRateLabel = stringMgr.getString("device.setting.image.zoomrate.label");
+        final JLabel displaySizeLabel = new JLabel(zoomRateLabel);
+        pane.add(displaySizeLabel, JideBoxLayout.FIX);
         zoomRateField = new JComboBox<>();
         zoomRateField.addItem(new ItemMeta<>("20%", 0.2f));
         zoomRateField.addItem(new ItemMeta<>("40%", 0.4f));
@@ -145,7 +144,18 @@ public class DeviceSettingDialog extends BaseDialog {
         zoomRateField.addItem(new ItemMeta<>("60%", 0.6f));
         zoomRateField.addItem(new ItemMeta<>("80%", 0.8f));
         zoomRateField.addItem(new ItemMeta<>("100%", 1.0f));
-        zoomRateField.setSelectedIndex(2);
+        zoomRateField.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    float zoomRate = (Float) ((ItemMeta)zoomRateField.getSelectedItem()).getValue();
+                    int width = (int) (connection.getScreenHeight() * zoomRate);
+                    int height = (int) (connection.getScreenWidth() * zoomRate);
+                    String text = zoomRateLabel + "(" + width + "x" + height + ")";
+                    displaySizeLabel.setText(text);
+                }
+            }
+        });
         pane.add(zoomRateField, JideBoxLayout.FIX);
 
         return pane;
@@ -214,28 +224,54 @@ public class DeviceSettingDialog extends BaseDialog {
         String deviceId = connection.getId();
         Setting setting = Setting.getInstance();
 
+        java.util.List<String> changedKeyList = new ArrayList<>(6);
+        boolean changed = false;
+
         String name = nameField.getText().trim();
         if (StringUtil.isNotEmpty(name)) {
-            setting.putProperty(deviceId, SettingConstant.KEY_DEVICE_NAME, name);
+            changed = setting.putProperty(deviceId, SettingConstant.KEY_DEVICE_NAME, name);
         } else {
-            setting.putProperty(deviceId, SettingConstant.KEY_DEVICE_NAME, null);
+            changed = setting.putProperty(deviceId, SettingConstant.KEY_DEVICE_NAME, null);
+        }
+        if (changed) {
+            changedKeyList.add(SettingConstant.KEY_DEVICE_NAME);
         }
 
         //toolbar
-        setting.putBooleanProperty(deviceId, SettingConstant.KEY_DEVICE_TOOLBAR_VISIBLE, toolBarDisplayField.isSelected());
+        changed = setting.putBooleanProperty(deviceId, SettingConstant.KEY_DEVICE_TOOLBAR_VISIBLE, toolBarDisplayField.isSelected());
+        if (changed) {
+            changedKeyList.add(SettingConstant.KEY_DEVICE_TOOLBAR_VISIBLE);
+        }
         //navigation bar
-        setting.putBooleanProperty(deviceId, SettingConstant.KEY_DEVICE_NAVI_VISIBLE, naviBarDisplayField.isSelected());
+        changed = setting.putBooleanProperty(deviceId, SettingConstant.KEY_DEVICE_NAVI_VISIBLE, naviBarDisplayField.isSelected());
+        if (changed) {
+            changedKeyList.add(SettingConstant.KEY_DEVICE_NAVI_VISIBLE);
+        }
         //always top
-        setting.putBooleanProperty(deviceId, SettingConstant.KEY_DEVICE_ALWAYS_TOP, alwaysTopField.isSelected());
+        changed = setting.putBooleanProperty(deviceId, SettingConstant.KEY_DEVICE_ALWAYS_TOP, alwaysTopField.isSelected());
+        if (changed) {
+            changedKeyList.add(SettingConstant.KEY_DEVICE_ALWAYS_TOP);
+        }
 
         //quality
         ItemMeta<Integer> qualityItem = (ItemMeta<Integer>) qualityField.getSelectedItem();
-        setting.putIntProperty(deviceId, SettingConstant.KEY_DEVICE_IMAGE_QUALITY, qualityItem.getValue());
+        changed = setting.putIntProperty(deviceId, SettingConstant.KEY_DEVICE_IMAGE_QUALITY, qualityItem.getValue());
+        if (changed) {
+            changedKeyList.add(SettingConstant.KEY_DEVICE_IMAGE_QUALITY);
+        }
+
         //zoom rate
         ItemMeta<Float> zoomRateItem = (ItemMeta<Float>) zoomRateField.getSelectedItem();
-        setting.putFloatProperty(deviceId, SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE, zoomRateItem.getValue());
+        changed = setting.putFloatProperty(deviceId, SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE, zoomRateItem.getValue());
+        if (changed) {
+            changedKeyList.add(SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE);
+        }
 
         setting.saveDeviceSetting(deviceId);
+
+        if(changedKeyList.size() > 0) {
+            Setting.getInstance().fireSettingResult(deviceId, changedKeyList.toArray(new String[0]));
+        }
 
         dispose();
     }

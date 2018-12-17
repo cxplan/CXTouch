@@ -1,7 +1,6 @@
 package com.cxplan.projection;
 
 import com.alee.global.StyleConstants;
-import com.alee.laf.WebLookAndFeel;
 import com.alee.utils.WebUtils;
 import com.cxplan.projection.core.ServiceFactory;
 import com.cxplan.projection.core.connection.DeviceConnectionAdapter;
@@ -14,18 +13,20 @@ import com.cxplan.projection.core.setting.SettingConstant;
 import com.cxplan.projection.core.setting.SettingEvent;
 import com.cxplan.projection.i18n.StringManager;
 import com.cxplan.projection.i18n.StringManagerFactory;
+import com.cxplan.projection.net.message.MessageException;
 import com.cxplan.projection.service.IInfrastructureService;
 import com.cxplan.projection.ui.DeviceImageFrame;
 import com.cxplan.projection.ui.DeviceSettingDialog;
 import com.cxplan.projection.ui.component.BaseFrame;
 import com.cxplan.projection.ui.component.IconButton;
-import com.cxplan.projection.ui.laf.CXLookAndFeel;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.ui.util.IconUtil;
 import com.cxplan.projection.util.SystemUtil;
 import com.jidesoft.swing.DefaultOverlayable;
 import com.jidesoft.swing.JideBoxLayout;
 import info.clearthought.layout.TableLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -39,7 +40,7 @@ import java.util.Map;
  * created on 2018/12/5
  */
 public class MainFrame extends BaseFrame {
-
+    private static final Logger logger = LoggerFactory.getLogger(MainFrame.class);
     private static final StringManager stringMgr =
             StringManagerFactory.getStringManager(MainFrame.class);
 
@@ -506,7 +507,45 @@ public class MainFrame extends BaseFrame {
                     return;
                 }
                 clientFrame.setNavigationBarVisible((Boolean)event.getNewValue());
+            } else if (event.isResult()){
+                String[] keys = event.getChangedKeys();
+                boolean isHit = false;
+                for (String key : keys) {
+                    if (key.equals(SettingConstant.KEY_DEVICE_IMAGE_QUALITY)
+                            || key.equals(SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE)) {
+                        isHit = true;
+                        break;
+                    }
+                }
+
+                if (isHit) {
+                    processImageConfigChanged(event.getSource());
+                }
             }
         }
+    }
+
+    private void processImageConfigChanged(final String deviceId) {
+        final DeviceImageFrame instance = DeviceImageFrame.getInstance(deviceId, application, false);
+        if (instance != null) {
+            instance.waitImageChannelChanged();
+        }
+
+        Runnable task = new Runnable() {
+            @Override
+            public void run() {
+                IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
+                try {
+                    infrastructureService.startMinicapService(deviceId);
+                } catch (MessageException e) {
+                    logger.error(e.getMessage(), e);
+                    GUIUtil.showErrorMessageDialog(e.getMessage());
+                }
+
+                instance.openImageChannel();
+            }
+        };
+        application.getExecutors().submit(task);
+
     }
 }

@@ -238,13 +238,11 @@ public class DeviceDisplayPanel extends JPanel {
         int canvasWidth = canvas.getWidth();
         int canvasHeight = canvas.getHeight();
         dim.height += canvasHeight;
+        dim.width += canvasWidth;
 
         if (extComp != null && getComponentZOrder(extComp) > -1) {
             Dimension extPreSize = extComp.getPreferredSize();
-            dim.width += Math.max(canvasWidth, extPreSize.width);
             dim.height += extPreSize.height;
-        } else {
-            dim.width += canvasWidth;
         }
 
         return dim;

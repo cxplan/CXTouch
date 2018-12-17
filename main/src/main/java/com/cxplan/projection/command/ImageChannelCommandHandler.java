@@ -40,8 +40,7 @@ public class ImageChannelCommandHandler extends AbstractCommandHandler {
             return;
         }
 
-        instance.showWaitingTip("Switch Config for image channel");
-        connection.closeImageChannel();
+        instance.waitImageChannelChanged();
     }
     private void processImageConfigFinished(IDeviceConnection connection, Message message) {
         DeviceImageFrame instance = DeviceImageFrame.getInstance(connection.getId(), application, false);

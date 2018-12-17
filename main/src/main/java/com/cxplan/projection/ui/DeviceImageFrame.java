@@ -19,6 +19,7 @@ import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.ui.util.IconUtil;
 import com.cxplan.projection.util.ImageUtil;
 import com.jidesoft.swing.DefaultOverlayable;
+import com.jidesoft.swing.JideBoxLayout;
 import com.jidesoft.swing.JideButton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -183,6 +184,16 @@ public class DeviceImageFrame extends BaseWebFrame {
             showWaitingTip(stringMgr.getString("status.waitimage"));
             takeScreenshot();
         }
+    }
+
+    /**
+     * When some image parameters are changed, the image service may make some modification.
+     * Client should wait a moment util modification is completed.
+     */
+    public void waitImageChannelChanged() {
+        String promptText = stringMgr.getString("status.wait.config.changed");
+        showWaitingTip(promptText);
+        connection.closeImageChannel();
     }
 
     private void initView() {
@@ -363,7 +374,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         JPanel panel = new JPanel();
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder());
-        panel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        panel.setLayout(new JideBoxLayout(panel, JideBoxLayout.LINE_AXIS));
 
         JideButton backBtn = new JideButton(ICON_BACK);
         backBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
@@ -382,10 +393,7 @@ public class DeviceImageFrame extends BaseWebFrame {
                 }
             }
         });
-        panel.add(backBtn);
-
-        Component box = Box.createHorizontalStrut(gap);
-        panel.add(box);
+        panel.add(backBtn, JideBoxLayout.FLEXIBLE);
 
         JideButton homeBtn = new JideButton(ICON_HOME);
         homeBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
@@ -404,10 +412,10 @@ public class DeviceImageFrame extends BaseWebFrame {
                 }
             }
         });
-        panel.add(homeBtn);
+        panel.add(homeBtn, JideBoxLayout.FLEXIBLE);
 
-        box = Box.createHorizontalStrut(gap);
-        panel.add(box);
+//        box = Box.createHorizontalStrut(gap);
+//        panel.add(box);
 
         JideButton wxBtn = new JideButton(ICON_WEIXIN);
         wxBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
@@ -418,10 +426,10 @@ public class DeviceImageFrame extends BaseWebFrame {
                 startWx();
             }
         });
-        panel.add(wxBtn);
+        panel.add(wxBtn, JideBoxLayout.FLEXIBLE);
 
-        box = Box.createHorizontalStrut(gap);
-        panel.add(box);
+//        box = Box.createHorizontalStrut(gap);
+//        panel.add(box);
 
         JideButton powerBtn = new JideButton(ICON_POWER);
         powerBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
@@ -432,7 +440,7 @@ public class DeviceImageFrame extends BaseWebFrame {
                 toggleScreenOnOff();
             }
         });
-        panel.add(powerBtn);
+        panel.add(powerBtn, JideBoxLayout.FLEXIBLE);
 
         return panel;
     }
@@ -529,11 +537,16 @@ public class DeviceImageFrame extends BaseWebFrame {
         if (currentImageWidth != newWidth || currentImageHeight != newHeight) {
             currentImageHeight = newHeight;
             currentImageWidth = newWidth;
+
+            //update zoom rate
+            double newZoomRate = (double) currentImageWidth / connection.getScreenHeight();
+            clientScreen.setDeviceZoomRate(newZoomRate);
+
             changeFrameSize();
         }
     }
     private void changeFrameSize() {
-        int maxHeight = (int) (Toolkit.getDefaultToolkit().getScreenSize().height * 0.7);
+        int maxHeight = (int) (Toolkit.getDefaultToolkit().getScreenSize().height * 0.8);
         int optimalWidth = currentImageWidth;
         int optimalHeight = currentImageHeight;
         if (optimalHeight > maxHeight) {

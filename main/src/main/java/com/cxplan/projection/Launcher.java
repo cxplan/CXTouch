@@ -149,7 +149,7 @@ public class Launcher {
             }
 
             if (event.getPropertyName().equals(SettingConstant.KEY_DEVICE_NAME)) {
-               IDeviceConnection connection =  Application.getInstance().getDeviceConnection((String) event.getSource());
+               IDeviceConnection connection =  Application.getInstance().getDeviceConnection( event.getSource());
                if (connection == null) {
                    return;
                }
