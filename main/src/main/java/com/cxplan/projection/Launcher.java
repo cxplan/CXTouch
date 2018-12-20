@@ -144,7 +144,7 @@ public class Launcher {
 
         @Override
         public void changed(SettingEvent event) {
-            if (event.isSystemSetting()) {
+            if (event.isSystemSetting() || event.isResult()) {
                 return;
             }
 
@@ -155,6 +155,13 @@ public class Launcher {
                }
 
                connection.setDeviceName((String) event.getNewValue());
+            } else if (event.getPropertyName().equals(SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE)) {
+                IDeviceConnection connection =  Application.getInstance().getDeviceConnection( event.getSource());
+                if (connection == null) {
+                    return;
+                }
+
+                connection.setZoomRate((float) event.getNewValue());
             }
         }
     }

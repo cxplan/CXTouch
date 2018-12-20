@@ -14,14 +14,6 @@ import java.nio.channels.SocketChannel;
  */
 public interface IDeviceConnection extends IDeviceMeta {
 
-    String PROPERTY_WIDTH = "width";
-    String PROPERTY_HEIGHT = "height";
-    String PROPERTY_ZOOM_RATE = "zoom_rate";
-    String PROPERTY_PHONE = "phone";
-    String PROPERTY_DEVICE_NAME = "device_name";
-    int MAX_TOP_USERS = 5;
-
-    IDeviceMeta getDeviceMeta();
 
     /**
      * Return the device SDK handle object.
@@ -75,10 +67,23 @@ public interface IDeviceConnection extends IDeviceMeta {
     void closeImageChannel();
 
     SocketChannel getImageChannel();
-    /**
-     * return the thread of process video frame.
-     */
-    Thread getImageProcessThread();
 
+    /**
+     * Set a custom name for device.
+     */
     void setDeviceName(String name);
+
+    /**
+     * Set the rate at which the screen size zooms.
+     */
+    void setZoomRate(float zoomRate);
+
+    /**
+     * Set the rotation of screen.
+     */
+    void setRotation(short rotation);
+    /**
+     * Return the meta object of device
+     */
+    IDeviceMeta getDeviceMeta();
 }

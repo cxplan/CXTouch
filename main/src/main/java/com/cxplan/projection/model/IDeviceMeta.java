@@ -50,6 +50,15 @@ public interface IDeviceMeta {
      */
     double getZoomRate();
 
+    /**
+     * Return the rotation of device screen.
+     * @see com.cxplan.projection.MonkeyConstant#ROTATION_0
+     * @see com.cxplan.projection.MonkeyConstant#ROTATION_90
+     * @see com.cxplan.projection.MonkeyConstant#ROTATION_180
+     * @see com.cxplan.projection.MonkeyConstant#ROTATION_270
+     */
+    short getRotation();
+
     boolean isOnline();
     /**
      * Return the availability of network.

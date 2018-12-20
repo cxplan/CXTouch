@@ -145,9 +145,12 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
             rawImage = pm.getDevice().getScreenshot(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            return null;
+            return buildEmptyImage(realWidth, realHeight);
         }
 
+        if (rawImage == null) {
+            return buildEmptyImage(realWidth, realHeight);
+        }
         BufferedImage bufferedImage = new BufferedImage(rawImage.width,
                 rawImage.height, BufferedImage.TYPE_INT_ARGB);
         int index = 0;
@@ -161,6 +164,11 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
         }
 
         return bufferedImage.getScaledInstance(realWidth, realHeight, Image.SCALE_SMOOTH);
+    }
+
+    private BufferedImage buildEmptyImage(int width, int height) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+        return image;
     }
 
     private IDevice getDevice(String deviceId) {
@@ -329,7 +337,7 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
 
         Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
         message.setParameter("ch", name);
-        message.setParameter("type", MonkeyConstant.EVENT_KEYDOWN);
+        message.setParameter("type", MonkeyConstant.EVENT_KEY_DOWN);
 
         pm.sendMessage(message);
     }
@@ -345,7 +353,7 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
 
         Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
         message.setParameter("ch", name);
-        message.setParameter("type", MonkeyConstant.EVENT_KEYUP);
+        message.setParameter("type", MonkeyConstant.EVENT_KEY_UP);
 
         pm.sendMessage(message);
     }
@@ -366,8 +374,18 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
     }
 
     @Override
-    public void unlock(String deviceId) throws MessageException {
-        throw new UnsupportedOperationException();
+    public void wake(String deviceId) throws MessageException {
+        DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
+        if (pm == null) {
+            String error = "The phone is offline: " + deviceId;
+            logger.error(error);
+            throw new MonkeyException(error);
+        }
+
+        Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
+        message.setParameter("type", MonkeyConstant.EVENT_WAKE);
+
+        pm.sendMessage(message);
     }
 
     @Override
@@ -380,24 +398,38 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
 
     @Override
     public void scrollUp(String deviceId) throws MessageException {
-        /*IChimpDevice chimpDevice = getDevice(deviceId);
+        DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
+        if (pm == null) {
+            String error = "The phone is offline: " + deviceId;
+            logger.error(error);
+            throw new MonkeyException(error);
+        }
 
-        try {
-            chimpDevice.getManager().touchUp(100, 100);
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }*/
+        Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
+        message.setParameter("vs", 0.8f);
+        message.setParameter("x", 0f);
+        message.setParameter("y", (float)pm.getScreenHeight()/2);
+        message.setParameter("type", MonkeyConstant.EVENT_SCROLL);
+
+        pm.sendMessage(message);
     }
 
     @Override
     public void scrollDown(String deviceId) throws MessageException {
-        /*IChimpDevice chimpDevice = getDevice(deviceId);
+        DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
+        if (pm == null) {
+            String error = "The phone is offline: " + deviceId;
+            logger.error(error);
+            throw new MonkeyException(error);
+        }
 
-        try {
-            chimpDevice.getManager().touchDown(100, 100);
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }*/
+        Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
+        message.setParameter("vs", -0.8f);
+        message.setParameter("x", 0f);
+        message.setParameter("y", (float)pm.getScreenHeight()/2);
+        message.setParameter("type", MonkeyConstant.EVENT_SCROLL);
+
+        pm.sendMessage(message);
     }
 
     private String shell(String deviceId, String... args) {

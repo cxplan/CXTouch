@@ -19,6 +19,7 @@ public class SystemUtil {
     public static final String APPLICATION_NAME = "CXTouch";
     public static final String CONFIG_PATH;
     public final static String basePath;
+
     static {
         basePath = System.getProperty("user.home") + separator + "." + APPLICATION_NAME + separator;
         String tmpPath = System.getProperty("config.path");
@@ -54,6 +55,7 @@ public class SystemUtil {
             return false;
         }
     }
+
     /**
      * Validate whether current os is window
      *
@@ -68,6 +70,7 @@ public class SystemUtil {
             return false;
         }
     }
+
     /**
      * Validate whether current os is linux
      *
@@ -86,15 +89,18 @@ public class SystemUtil {
     /**
      * Install some necessary items for device connection.
      * <li>name</li>
-     *
      */
     public static void installConfig(IDeviceConnection connection) {
-         if (connection == null) {
-             return;
-         }
+        if (connection == null) {
+            return;
+        }
 
-         String name = Setting.getInstance().getProperty(connection.getId(), SettingConstant.KEY_DEVICE_NAME, null);
-         connection.setDeviceName(name);
+        String name = Setting.getInstance().getProperty(connection.getId(), SettingConstant.KEY_DEVICE_NAME, null);
+        connection.setDeviceName(name);
+
+        float zoomRate = Setting.getInstance().getFloatProperty(connection.getId(),
+                SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE, SettingConstant.DEFAULT_ZOOM_RATE);
+        connection.setZoomRate(zoomRate);
     }
 
     /**
@@ -125,6 +131,7 @@ public class SystemUtil {
     public static void info(String message) {
         logger.info(message);
     }
+
     public static void info(String pattern, Object... param) {
         logger.info(pattern, param);
     }

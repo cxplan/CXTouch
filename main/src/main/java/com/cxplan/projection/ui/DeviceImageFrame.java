@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Created on 2017/4/7.
+ * Created on 2018/4/7.
  *
  * @author kenny
  */
@@ -43,7 +43,7 @@ public class DeviceImageFrame extends BaseWebFrame {
 
     private static final Logger logger = LoggerFactory.getLogger(DeviceImageFrame.class);
 
-    public static final ImageIcon DISCONNECT = IconUtil.getIcon("/resource/image/disconnected.png");
+    public static final ImageIcon DISCONNECT = IconUtil.getIcon("/image/disconnected.png");
     public static final ImageIcon WAITING = IconUtil.getIcon("/image/wait.gif");
     public static final ImageIcon ICON_BACK = IconUtil.getIcon("/image/monkey/back.png");
     public static final ImageIcon ICON_HOME = IconUtil.getIcon("/image/monkey/home.png");
@@ -169,6 +169,11 @@ public class DeviceImageFrame extends BaseWebFrame {
             boolean ret = connection.openImageChannel(new ConnectStatusListener() {
                 @Override
                 public void OnSuccess(IDeviceConnection connection) {
+                    try {
+                        application.getDeviceService().wake(connection.getId());
+                    } catch (MessageException e) {
+                        logger.error(e.getMessage(), e);
+                    }
                 }
 
                 @Override
@@ -186,12 +191,18 @@ public class DeviceImageFrame extends BaseWebFrame {
         }
     }
 
+    public void waitImageChannelChanged() {
+        waitImageChannelChanged(null);
+    }
     /**
      * When some image parameters are changed, the image service may make some modification.
      * Client should wait a moment util modification is completed.
      */
-    public void waitImageChannelChanged() {
-        String promptText = stringMgr.getString("status.wait.config.changed");
+    public void waitImageChannelChanged(String msg) {
+        String promptText = msg;
+        if (promptText == null) {
+            promptText = stringMgr.getString("status.wait.config.changed");
+        }
         showWaitingTip(promptText);
         connection.closeImageChannel();
     }
@@ -241,9 +252,7 @@ public class DeviceImageFrame extends BaseWebFrame {
                     return false;
                 }
 
-                if(!isFirstFrame && !DeviceImageFrame.this.isFocused()) {
-                    return true;
-                } else if (isFirstFrame) {
+                if (isFirstFrame) {
                     imageQueue.clear();
                     showScreenResult();
                 }
@@ -267,7 +276,7 @@ public class DeviceImageFrame extends BaseWebFrame {
 
             @Override
             public void removed(DeviceConnectionEvent event) {
-                disconnect(event);
+                showWaitingTip("", DISCONNECT);
             }
 
             @Override
@@ -298,9 +307,7 @@ public class DeviceImageFrame extends BaseWebFrame {
                 if (DeviceImageFrame.this.connection != event.getSource()) {
                     return;
                 }
-                if (event.getType() != DeviceConnectionEvent.ConnectionType.NETWORK) {
-                    showWaitingTip("", DISCONNECT);
-                }
+                showWaitingTip(stringMgr.getString("status.connecting"));
             }
 
             /**
@@ -370,7 +377,6 @@ public class DeviceImageFrame extends BaseWebFrame {
     }
 
     private JPanel createDeviceButtonPanel() {
-        int gap = 40;
         JPanel panel = new JPanel();
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder());
@@ -414,9 +420,6 @@ public class DeviceImageFrame extends BaseWebFrame {
         });
         panel.add(homeBtn, JideBoxLayout.FLEXIBLE);
 
-//        box = Box.createHorizontalStrut(gap);
-//        panel.add(box);
-
         JideButton wxBtn = new JideButton(ICON_WEIXIN);
         wxBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
         wxBtn.setToolTipText(stringMgr.getString("navi.button.weixin.tooltip"));
@@ -427,9 +430,6 @@ public class DeviceImageFrame extends BaseWebFrame {
             }
         });
         panel.add(wxBtn, JideBoxLayout.FLEXIBLE);
-
-//        box = Box.createHorizontalStrut(gap);
-//        panel.add(box);
 
         JideButton powerBtn = new JideButton(ICON_POWER);
         powerBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
@@ -539,7 +539,12 @@ public class DeviceImageFrame extends BaseWebFrame {
             currentImageWidth = newWidth;
 
             //update zoom rate
-            double newZoomRate = (double) currentImageWidth / connection.getScreenHeight();
+            double newZoomRate;
+            if ((connection.getRotation() % 2) != 0) {
+                newZoomRate = (double) currentImageWidth / connection.getScreenWidth();
+            } else {
+                newZoomRate = (double) currentImageWidth / connection.getScreenHeight();
+            }
             clientScreen.setDeviceZoomRate(newZoomRate);
 
             changeFrameSize();
@@ -555,14 +560,6 @@ public class DeviceImageFrame extends BaseWebFrame {
         }
         clientScreen.setCanvasSize(optimalWidth, optimalHeight);
 
-        Dimension dim = clientScreen.getPreferredSize();
-        if (getContentPane().isVisible() && getContentPane().isShowing()) {
-            int hgap = getWidth() - getContentPane().getWidth();
-            int vgap = getHeight() - getContentPane().getHeight();
-            dim.width += hgap;
-            dim.height += vgap;
-        }
-//        setSize(dim);
         pack();
         System.out.println("Frame size is changed:[" + getWidth() + "," + getHeight() + "]");
     }
@@ -635,7 +632,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         }
 
         @Override
-        public void scroll(int startx, int starty, int endx, int endy, int steps, long ms) {
+        public void scroll(int startx, int starty, int endx, int endy) {
             if (!DeviceImageFrame.this.connection.isOnline()) {
                 GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                 return;
@@ -651,5 +648,6 @@ public class DeviceImageFrame extends BaseWebFrame {
                 GUIUtil.showErrorMessageDialog(e.getMessage());
             }
         }
+
     };
 }

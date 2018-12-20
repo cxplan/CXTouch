@@ -14,6 +14,7 @@ import com.cxplan.projection.core.setting.Setting;
 import com.cxplan.projection.net.DSCodecFactory;
 import com.cxplan.projection.net.DeviceIoHandlerAdapter;
 import com.cxplan.projection.service.IDeviceService;
+import com.cxplan.projection.service.IInfrastructureService;
 import com.cxplan.projection.util.StringUtil;
 import com.cxplan.projection.util.SystemUtil;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
@@ -135,7 +136,7 @@ public class Application implements IApplication {
 
                 DefaultDeviceConnection deviceConnection;
                 try {
-                    deviceConnection = new DefaultDeviceConnection(id, device);
+                    deviceConnection = new DefaultDeviceConnection(id, device, Application.this);
                     deviceMap.put(id, deviceConnection);
 
                     if (notifyController) {
@@ -149,6 +150,10 @@ public class Application implements IApplication {
                 //load setting
                 Setting.getInstance().loadDeviceSetting(id);
                 SystemUtil.installConfig(deviceConnection);
+
+                //clean environment( kill old image service process )
+                int pid = getInfrastructureService().getMinicapProcessID(id);
+                AdbUtil.killProcess(pid, device);
 
                 //create forward by adb
                 try {
@@ -204,15 +209,6 @@ public class Application implements IApplication {
         } catch (Exception e) {
             logger.error("Removing image forward failed: " + e.getMessage(), e);
         }
-        //remove monkey forward
-        try {
-            DeviceForward forward = ForwardManager.getInstance().removeMonkeyForward(id);
-            if (forward != null) {
-                pm.getDevice().removeForward(forward.getLocalPort(), forward.getRemotePort());
-            }
-        } catch (Exception e) {
-            logger.error("Removing monkey forward failed: " + e.getMessage(), e);
-        }
     }
 
     @Override
@@ -224,6 +220,12 @@ public class Application implements IApplication {
     public IDeviceService getDeviceService() {
         IDeviceService deviceService = ServiceFactory.getService("deviceService");
         return deviceService;
+    }
+
+    @Override
+    public IInfrastructureService getInfrastructureService() {
+        IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
+        return infrastructureService;
     }
 
     public void addDeviceConnectionListener(DeviceConnectionListener listener) {
@@ -286,9 +288,13 @@ public class Application implements IApplication {
         int consumeCount = 0;
         for (int i = listeners.length-2; i>=0; i-=2) {
             if (listeners[i]==DeviceConnectionListener.class) {
-                boolean ret = ((DeviceConnectionListener)listeners[i+1]).frameReady(event);
-                if (ret) {
-                    consumeCount++;
+                try {
+                    boolean ret = ((DeviceConnectionListener)listeners[i+1]).frameReady(event);
+                    if (ret) {
+                        consumeCount++;
+                    }
+                } catch (Throwable e) {
+                    logger.error(e.getMessage(), e);
                 }
             }
         }
@@ -307,7 +313,11 @@ public class Application implements IApplication {
         // those that are interested in this event
         for (int i = listeners.length-2; i>=0; i-=2) {
             if (listeners[i]==DeviceConnectionListener.class) {
-                ((DeviceConnectionListener)listeners[i+1]).connected(event);
+                try {
+                    ((DeviceConnectionListener) listeners[i + 1]).connected(event);
+                } catch (Throwable e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         }
 
@@ -320,7 +330,11 @@ public class Application implements IApplication {
         // those that are interested in this event
         for (int i = listeners.length-2; i>=0; i-=2) {
             if (listeners[i]==DeviceConnectionListener.class) {
-                ((DeviceConnectionListener)listeners[i+1]).created(event);
+                try {
+                    ((DeviceConnectionListener) listeners[i + 1]).created(event);
+                } catch (Throwable e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         }
 
@@ -333,7 +347,11 @@ public class Application implements IApplication {
         // those that are interested in this event
         for (int i = listeners.length-2; i>=0; i-=2) {
             if (listeners[i]==DeviceConnectionListener.class) {
-                ((DeviceConnectionListener)listeners[i+1]).connectionClosed(event);
+                try {
+                    ((DeviceConnectionListener)listeners[i+1]).connectionClosed(event);
+                } catch (Throwable e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         }
 
@@ -346,7 +364,11 @@ public class Application implements IApplication {
         // those that are interested in this event
         for (int i = listeners.length-2; i>=0; i-=2) {
             if (listeners[i]==DeviceConnectionListener.class) {
-                ((DeviceConnectionListener)listeners[i+1]).removed(event);
+                try {
+                    ((DeviceConnectionListener)listeners[i+1]).removed(event);
+                } catch (Throwable e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         }
 

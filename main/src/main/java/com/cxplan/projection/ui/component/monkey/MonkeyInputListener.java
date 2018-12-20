@@ -27,5 +27,5 @@ public interface MonkeyInputListener {
     void touchUp(int x, int y);
     void touchMove(int x, int y);
 
-    void scroll(int startx, int starty, int endx, int endy, int steps, long ms);
+    void scroll(int startx, int starty, int endx, int endy);
 }

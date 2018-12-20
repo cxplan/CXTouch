@@ -2,7 +2,6 @@ package com.cxplan.projection.ui;
 
 import com.cxplan.projection.ui.component.monkey.MonkeyCanvas;
 import com.cxplan.projection.ui.component.monkey.MonkeyInputListener;
-import info.clearthought.layout.TableLayout;
 
 import javax.swing.*;
 import java.awt.*;
@@ -198,7 +197,7 @@ public class DeviceDisplayPanel extends JPanel {
 
     protected JComponent extComp;
     protected Canvas canvas = null;
-    protected double initialScale = 1.0;
+    protected double displayScale = 1.0;
     protected double zoomRate = 1.0;
     protected double inverseGamma = 1.0;
     private Color color = null;
@@ -292,16 +291,16 @@ public class DeviceDisplayPanel extends JPanel {
         updateDeviceScale();
     }
     public double getCanvasScale() {
-        return initialScale;
+        return displayScale;
     }
     protected void setCanvasScale(double initialScale) {
-        this.initialScale = initialScale;
+        this.displayScale = initialScale;
         updateDeviceScale();
     }
 
     protected void updateDeviceScale() {
         if (canvas instanceof MonkeyCanvas) {
-            ((MonkeyCanvas) canvas).setScale(initialScale * zoomRate);
+            ((MonkeyCanvas) canvas).setScale(displayScale * zoomRate);
         }
     }
 
@@ -329,10 +328,10 @@ public class DeviceDisplayPanel extends JPanel {
                 double canvasRate = (double) height / width;
                 if (imageRate >= canvasRate) {
                     setCanvasScale((double)height / imageHeight);
-                    setCanvasSize((int)(imageWidth * initialScale), height);
+                    setCanvasSize((int)(imageWidth * displayScale), height);
                 } else {
                     setCanvasScale((double)width / imageWidth);
-                    setCanvasSize(width, (int)(imageHeight * initialScale));
+                    setCanvasSize(width, (int)(imageHeight * displayScale));
                 }
             }
         } else {
@@ -341,20 +340,20 @@ public class DeviceDisplayPanel extends JPanel {
                 double currentRate = (double)width / height;
                 if (rawRate >= currentRate) {
                     setCanvasScale((double)width/imageWidth);
-                    setCanvasSize(width, (int)(imageHeight * initialScale));
+                    setCanvasSize(width, (int)(imageHeight * displayScale));
                 } else {
                     setCanvasScale((double)height / imageHeight);
-                    setCanvasSize((int)(imageWidth * initialScale), height);
+                    setCanvasSize((int)(imageWidth * displayScale), height);
                 }
             } else {
                 double rawRate = (double)imageHeight / imageWidth;
                 double currentRate = (double)height / width;
                 if (rawRate >= currentRate) {
                     setCanvasScale((double)height/imageHeight);
-                    setCanvasSize((int)(imageWidth * initialScale), height);
+                    setCanvasSize((int)(imageWidth * displayScale), height);
                 } else {
                     setCanvasScale((double)width / imageWidth);
-                    setCanvasSize(width, (int)(imageHeight * initialScale));
+                    setCanvasSize(width, (int)(imageHeight * displayScale));
                 }
             }
         }
@@ -404,7 +403,7 @@ public class DeviceDisplayPanel extends JPanel {
         if (imageHeight <= 0 && defaultHeight > 0) {
             imageHeight = defaultHeight;
         }
-        if (forceCanvasResize || canvas.getWidth() != (int)(imageWidth * initialScale) || canvas.getHeight() != (int)(imageHeight * initialScale)) {
+        if (forceCanvasResize || canvas.getWidth() != (int)(imageWidth * displayScale) || canvas.getHeight() != (int)(imageHeight * displayScale)) {
             if (forceCanvasResize) {
                 forceCanvasResize = false;
             }

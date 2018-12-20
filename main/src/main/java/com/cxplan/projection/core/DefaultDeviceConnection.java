@@ -1,6 +1,7 @@
 package com.cxplan.projection.core;
 
 import com.android.ddmlib.IDevice;
+import com.cxplan.projection.IApplication;
 import com.cxplan.projection.core.adb.ForwardManager;
 import com.cxplan.projection.core.connection.*;
 import com.cxplan.projection.core.image.ControllerImageSession;
@@ -37,9 +38,9 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDeviceConnection.class);
 
+    private IApplication application;
     private DeviceInfo deviceMeta;
     private IDevice device;
-//    private IChimpDevice chimpDevice;
 
     private SocketChannel imageChannel;
     private ImageProcessThread imageThread;
@@ -47,8 +48,9 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
     private int connectCount = 0;//The total count of connecting to controller
     volatile private boolean isConnecting = false;
 
-    public DefaultDeviceConnection(String id, IDevice device) {
+    public DefaultDeviceConnection(String id, IDevice device, IApplication application) {
         setId(new JID(id, JID.Type.DEVICE));
+        this.application = application;
         deviceMeta = new DeviceInfo();
         deviceMeta.setId(id);
         try {
@@ -60,7 +62,6 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             logger.error(ex.getMessage(), ex);
         }
         this.device = device;
-//        this.chimpDevice = chimpDevice;
     }
 
     public IDevice getDevice() {
@@ -198,6 +199,11 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
     }
 
     @Override
+    public short getRotation() {
+        return deviceMeta.getRotation();
+    }
+
+    @Override
     public boolean isOnline() {
         return isConnected();
     }
@@ -229,11 +235,10 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
                 connectToImageService(listener);
             }
         };
-        Application.getInstance().getExecutors().submit(task);
+        application.getExecutors().submit(task);
         return false;
     }
 
-    @Override
     public Thread getImageProcessThread() {
         return imageThread;
     }
@@ -244,9 +249,19 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
     }
 
     @Override
+    public void setZoomRate(float zoomRate) {
+        deviceMeta.setZoomRate(zoomRate);
+    }
+
+    @Override
+    public void setRotation(short rotation) {
+        deviceMeta.setRotation(rotation);
+    }
+
+    @Override
     public void dispose() {
         closeNetworkResource();
-        IDeviceConnection connection = Application.getInstance().getDeviceConnection(getId());
+        IDeviceConnection connection = application.getDeviceConnection(getId());
         if (connection == this) {
             Application.getInstance().removeDevice(getId());
         }
@@ -288,6 +303,15 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         }
     }
 
+    /**
+     * Connect to message service run in device, and initialize the context of connection.
+     * If 'wait' is true value, the thread will be blocked util the initialization action is completed.
+     * Otherwise return directly after the network connection is finished, the initialization action
+     * will be executed asynchronously.
+     *
+     * @param wait true: wait util the initialization action is completed.
+     * @throws Exception
+     */
     public void connect(boolean wait) throws Exception {
 
         if (isConnecting) {
@@ -297,13 +321,16 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
 
         try {
             //start cxplan
-            IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
+            IInfrastructureService infrastructureService = application.getInfrastructureService();
             infrastructureService.startMainProcess(device);
 
             Thread.sleep(1000);
 
             long timeout = 10000;//connect timeout
             int forwardPort = getMessageForwardPort();
+            //ensure the forward available.
+            device.createForward(forwardPort, ForwardManager.MESSAGE_REMOTE_PORT);
+            //connect to forward port.
             NioSocketConnector connector = Application.getInstance().getDeviceConnector();
             ConnectFuture connFuture = connector.connect(new InetSocketAddress("localhost", forwardPort));
             connFuture.awaitUninterruptibly();
@@ -361,13 +388,13 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         //1. read device information.
         String id = message.getParameter("id");
         if (!id.equals(getId())) {
-            throw new RuntimeException("Preparing session failed: the id is not matched");
+            throw new RuntimeException("Preparing session failed: the id is not matched: " + id);
         }
         String phone = message.getParameter("phone");
         String imageServer = message.getParameter("host");
-        Integer imageWidth = message.getParameter("videoWidth");
-        Integer imageHeight = message.getParameter("videoHeight");
-        Double zoomRate = message.getParameter("zoomRate");
+        Integer screenWidth = message.getParameter("sw");
+        Integer screenHeight = message.getParameter("sh");
+        short rotation = message.getParameter("ro");
 
         //app version
         String mediateVersion = message.getParameter("mediateVersion");
@@ -377,7 +404,7 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             logger.warn("The image server information is missed: [host="
                     + imageServer + "]");
         }
-        DefaultDeviceConnection cd = Application.getInstance().getDeviceConnection(getId());
+        DefaultDeviceConnection cd = (DefaultDeviceConnection)application.getDeviceConnection(getId());
         if (cd == null) {
             logger.error("设备未通过USB连接：id=" + getId());
             Message errorMsg = Message.createResultMessage(message);
@@ -390,18 +417,9 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         cd.setPhone(phone);
         cd.deviceMeta.setIp(imageServer);
 
-        int realWidth = imageWidth;
-        int realHeight = imageHeight;
-        //adapt size of device.
-        if (zoomRate != null) {
-            realWidth = (int)(imageWidth / zoomRate);
-            realHeight = (int) (imageHeight / zoomRate);
-        } else {
-            zoomRate = 0.5d;
-        }
-        cd.deviceMeta.setScreenWidth(realWidth);
-        cd.deviceMeta.setScreenHeight(realHeight);
-        cd.deviceMeta.setZoomRate(zoomRate);
+        cd.deviceMeta.setScreenWidth(screenWidth);
+        cd.deviceMeta.setScreenHeight(screenHeight);
+        cd.setRotation(rotation);
 
         //install app version information.
         cd.deviceMeta.setMediateVersion(mediateVersion);
@@ -419,6 +437,9 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
 
     @Override
     public void closeImageChannel() {
+        if (!isImageChannelAvailable()) {
+            return;
+        }
         ImageSessionManager.getInstance().removeImageSession(getId(), new ImageSessionID(ImageSessionID.TYPE_HUB, getId()));
 
         if (imageChannel != null && imageChannel.isConnected()) {
@@ -470,14 +491,18 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             checkInputerInstallation();
 
             //check minicap process
-            int pid = infrastructureService.getMinicapProcessID(getId());
+            /*int pid = infrastructureService.getMinicapProcessID(getId());
             int count = 0;
-            while (pid < 0 && count < 30) {
+            while (pid < 0 && count < 50) {
                 count++;
                 Thread.sleep(200);
                 pid = infrastructureService.getMinicapProcessID(getId());
             }
-            logger.info("The minicap process is started: {}", getId());
+            if (pid < 0) {
+                logger.error("Starting minicap process failed: {}", getId());
+                return;
+            }
+            logger.info("The minicap process is started: {}, pid={}", getId(), pid);*/
 
             if (imageChannel != null) {
                 try {
@@ -514,7 +539,7 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         if (imageThread != null) {
             imageThread.stopMonitor();
         }
-        imageThread = new ImageProcessThread(this, Application.getInstance());
+        imageThread = new ImageProcessThread(this, application);
         imageThread.startMonitor();
         //fire connected event of image channel.
         Application.getInstance().fireOnDeviceConnectedEvent(this,

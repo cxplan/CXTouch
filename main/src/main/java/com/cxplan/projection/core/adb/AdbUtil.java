@@ -29,6 +29,41 @@ public class AdbUtil {
     }
 
     /**
+     * The 'ps' command in system is different in different android version.
+     * The parameters are changed in 8 and greater version, adding '-A' to retrieve all process information.
+     *
+     * @return return valid ps command.
+     */
+    public static String getPsCommand(IDevice device) {
+        String version = device.getProperty("ro.build.version.release");
+        if (version == null) {
+            return "ps";
+        }
+        version = version.trim();
+        int versionValue;
+        String majorVersion;
+        int index = version.indexOf(".");
+        if (index > -1) {
+            majorVersion = version.substring(0, index);
+        } else {
+            majorVersion = version;
+        }
+
+        try {
+            versionValue = Integer.parseInt(majorVersion);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return "ps";
+        }
+
+        if (versionValue >= 8) {
+            return "ps -A";
+        } else {
+            return "ps";
+        }
+    }
+
+    /**
      * Retrieve the path of specified package.
      * @param packageName package name.
      * @param device device object.
@@ -97,6 +132,21 @@ public class AdbUtil {
         }
     }
 
+    /**
+     * Kill specified process.
+     *
+     * @param pid the id of process.
+     * @param device device object.
+     */
+    public static void killProcess(int pid, IDevice device) {
+        if (pid < 0) {
+            return;
+        }
+        String cmd = "kill -9 " + pid;
+        shell(cmd, device);
+    }
+
+
     public static class LoggingOutputReceiver implements IShellOutputReceiver {
 
         public LoggingOutputReceiver() {
@@ -106,7 +156,7 @@ public class AdbUtil {
             String message = new String(data, offset, length);
             String[] arr = message.split("\n");
             for (String s : arr) {
-                logger.info(s);
+                logger.info("--->" + s);
             }
         }
 

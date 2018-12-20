@@ -38,7 +38,6 @@ public class MonkeyCanvas extends Canvas implements KeyListener{
     private Point inputPosition;
     private MonkeyInputListener inputListener;
     private double scale;
-    private long lastPressTime;
 
     public MonkeyCanvas(MonkeyInputListener inputListener) {
         initialize();
@@ -63,11 +62,10 @@ public class MonkeyCanvas extends Canvas implements KeyListener{
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                if (e.getButton() == MouseEvent.BUTTON3) {
+                if (e.getButton() != MouseEvent.BUTTON1) {
                     return;
                 }
                 inputPosition = e.getPoint();
-                lastPressTime = System.currentTimeMillis();
                 Point p = new Point(e.getX(), e.getY());
                 Point real = getRealPoint(p);
                 inputListener.touchDown((int)real.getX(), (int)real.getY());
@@ -77,6 +75,8 @@ public class MonkeyCanvas extends Canvas implements KeyListener{
             public void mouseReleased(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON3) {
                     inputListener.press(MonkeyConstant.KEYCODE_BACK);
+                    return;
+                } else if (e.getButton() != MouseEvent.BUTTON1) {
                     return;
                 }
 
@@ -90,17 +90,19 @@ public class MonkeyCanvas extends Canvas implements KeyListener{
             public void mouseWheelMoved(MouseWheelEvent e) {
                 int height = (int)(getHeight() / scale);
                 int addition = height/4;
-                inputListener.touchDown(10, height / 2);
-                if (e.getWheelRotation() == 1) {//scroll up
-                    inputListener.touchMove(10, height / 2 - addition);
-                } else if (e.getWheelRotation() == -1) {//scroll down
-                    inputListener.touchMove(10, height / 2 + addition);
+                if (e.getWheelRotation() == 1) {//scroll down
+                    inputListener.scroll(10, height / 2, 10, height / 2 + addition);
+                } else if (e.getWheelRotation() == -1) {//scroll up
+                    inputListener.scroll(10, height / 2, 10, height / 2 - addition);
                 }
             }
         });
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
+                if (e.getButton() == MouseEvent.BUTTON2) {
+                    return;
+                }
                 Point p = new Point(e.getX(), e.getY());
                 Point real = getRealPoint(p);
                 inputListener.touchMove((int)real.getX(), (int)real.getY());

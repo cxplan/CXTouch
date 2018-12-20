@@ -3,6 +3,7 @@ package com.cxplan.projection;
 import com.cxplan.projection.core.connection.DeviceConnectionListener;
 import com.cxplan.projection.core.connection.IDeviceConnection;
 import com.cxplan.projection.service.IDeviceService;
+import com.cxplan.projection.service.IInfrastructureService;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -42,6 +43,11 @@ public interface IApplication {
      *Return service which operation is related with device .
      */
     IDeviceService getDeviceService();
+
+    /**
+     * Return infrastructure service
+     */
+    IInfrastructureService getInfrastructureService();
 
     /**
      * Add listener to device connection.

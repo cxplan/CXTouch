@@ -312,7 +312,8 @@ public class MainFrame extends BaseFrame {
             ((DeviceComponent)deviceListPane.getComponent(deviceListPane.getComponentCount() - 2)).setSeparatorBorder(true);
         }
         deviceListPane.invalidate();
-        deviceListPane.revalidate();
+        deviceListPane.validate();
+        deviceListPane.repaint();
     }
 
     public void removeDevice(IDeviceConnection connection) {
@@ -330,17 +331,15 @@ public class MainFrame extends BaseFrame {
                     shouldUpdateBorder = true;
                 }
                 deviceListPane.remove(i);
-                if (i < (count -1)) {
-                    deviceListPane.remove(i + 1);
-                }
-                deviceListPane.invalidate();
-                deviceListPane.revalidate();
             }
         }
 
         if (shouldUpdateBorder) {
             ((DeviceComponent)deviceListPane.getComponent(count - 2)).setSeparatorBorder(false);
         }
+        deviceListPane.invalidate();
+        deviceListPane.validate();
+        deviceListPane.repaint();
 
         if (deviceListPane.getComponentCount() == 0) {
             deviceOverlayable.setOverlayVisible(true);
@@ -470,7 +469,7 @@ public class MainFrame extends BaseFrame {
         public void connected(DeviceConnectionEvent event) {
             //send image projection event
             if (event.getType() == DeviceConnectionEvent.ConnectionType.IMAGE) {
-                IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
+                IInfrastructureService infrastructureService = application.getInfrastructureService();
                 infrastructureService.notifyProjectionFlag(event.getSource().getId(), true);
             }
         }
@@ -479,7 +478,7 @@ public class MainFrame extends BaseFrame {
         public void connectionClosed(DeviceConnectionEvent event) {
             //send image projection event
             if (event.getType() == DeviceConnectionEvent.ConnectionType.IMAGE) {
-                IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
+                IInfrastructureService infrastructureService = application.getInfrastructureService();
                 infrastructureService.notifyProjectionFlag(event.getSource().getId(), false);
             }
         }
@@ -534,7 +533,7 @@ public class MainFrame extends BaseFrame {
         Runnable task = new Runnable() {
             @Override
             public void run() {
-                IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
+                IInfrastructureService infrastructureService = application.getInfrastructureService();
                 try {
                     infrastructureService.startMinicapService(deviceId);
                 } catch (MessageException e) {

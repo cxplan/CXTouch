@@ -71,7 +71,7 @@ public interface IDeviceService {
      * @param deviceId the ID of device.
      *
      */
-    void unlock(String deviceId) throws MessageException;
+    void wake(String deviceId) throws MessageException;
     /**
      * Start an activity.
      *

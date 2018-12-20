@@ -164,7 +164,7 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
             throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
         }
 
-        String cmd = "ps |grep minicap";
+        String cmd = AdbUtil.getPsCommand(connection.getDevice()) + "|grep minicap";
         String ret;
         try {
             ret = AdbUtil.shell(cmd, connection.getDevice());
@@ -253,7 +253,7 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
     }
 
     private int checkMainProcess(IDevice device) {
-        String cmd = "ps |grep com.cxplan.projection.mediate";
+        String cmd = AdbUtil.getPsCommand(device) + "|grep com.cxplan.projection.mediate";
         String ret;
         try {
             ret = AdbUtil.shell(cmd, device);
@@ -273,7 +273,7 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
         ///data/local/tmp --nice-name=com.cxplan.projection.mediate com.cxplan.mediate.process.Main
         String mainPackagePath = AdbUtil.getPackagePath("com.cxplan.mediate", device);
         if (mainPackagePath == null) {//is not installed
-            throw new RuntimeException("The main package is not installed!");
+            throw new RuntimeException("The main package is not installed: " + AdbUtil.getDeviceId(device));
         }
         StringBuilder sb = new StringBuilder("app_process -Djava.class.path=");
         sb.append(mainPackagePath).append(" /data/local/tmp --nice-name=com.cxplan.projection.mediate com.cxplan.mediate.process.Main");

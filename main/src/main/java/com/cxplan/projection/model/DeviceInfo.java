@@ -26,6 +26,7 @@ public class DeviceInfo implements IDeviceMeta {
     private int screenWidth;
     private int screenHeight;
     private double zoomRate;
+    private short rotation;
 
     private boolean isOnline;
     private String manufacturer;
@@ -113,6 +114,16 @@ public class DeviceInfo implements IDeviceMeta {
     public void setZoomRate(double zoomRate) {
         this.zoomRate = zoomRate;
     }
+    @JsonProperty("ro")
+    @Override
+    public short getRotation() {
+        return rotation;
+    }
+    @JsonProperty("ro")
+    public void setRotation(short rotation) {
+        this.rotation = rotation;
+    }
+
     @JsonProperty("o")
     public boolean isOnline() {
         return isOnline;

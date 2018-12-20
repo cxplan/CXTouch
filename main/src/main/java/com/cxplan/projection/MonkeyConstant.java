@@ -20,10 +20,10 @@ public class MonkeyConstant {
     public final static short EVENT_TOUCH_MOVE = 4;
     public final static short EVENT_TOUCH_UP = 5;
     public final static short EVENT_TOUCH = 6;//down and then up
-    public final static short EVENT_KEYDOWN = 7;//press down
-    public final static short EVENT_KEYUP = 8;//press up
-    public final static short EVENT_SCROLL_UP = 13;//scroll up the phone window
-    public final static short EVENT_SCROLL_DOWN = 14;//scroll down the phone window
+    public final static short EVENT_KEY_DOWN = 7;//press down
+    public final static short EVENT_KEY_UP = 8;//press up
+    public final static short EVENT_WAKE = 9;//wake screen.
+    public final static short EVENT_SCROLL = 13;//scroll up the phone window
     public static final short MONKEY_SWITCH_INPUTER = 100;
 
     /**
@@ -41,4 +41,22 @@ public class MonkeyConstant {
     public final static int KEYCODE_HOME = 3;
     public final static int KEYCODE_MENU = 82;
     public final static int KEYCODE_POWER = 26;
+
+    /**
+     * Rotation constant: 0 degree rotation (natural orientation)
+     */
+    public static final int ROTATION_0 = 0;
+    /**
+     * Rotation constant: 90 degree rotation.
+     */
+    public static final int ROTATION_90 = 1;
+    /**
+     * Rotation constant: 180 degree rotation.
+     */
+    public static final int ROTATION_180 = 2;
+    /**
+     * Rotation constant: 270 degree rotation.
+     */
+    public static final int ROTATION_270 = 3;
+
 }
