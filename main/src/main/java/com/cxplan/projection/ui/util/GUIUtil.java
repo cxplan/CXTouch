@@ -118,12 +118,10 @@ public class GUIUtil {
         logger.info("The windowMap size: {}", windowMap.size());
     }
     /**
-     * 以一个容器作为参照，使另一个容器居于其中间. 如果父窗口为null，以屏幕作为参照
+     * Place frame container at the center of owner container.
      *
-     * @param owner
-     *            参照容器
-     * @param frame
-     *            被调整容器
+     * @param owner the referred container.
+     * @param frame the container need be modify position.
      */
     public static void centerFrameToFrame(Container owner, Container frame) {
         if (owner == null) {
@@ -181,7 +179,7 @@ public class GUIUtil {
         return showConfirmDialog(findLikelyOwnerWindow(), message);
     }
     public static boolean showConfirmDialog(Component parent, String message) {
-        int ret = JOptionPane.showConfirmDialog(parent, message, "确认窗口", JOptionPane.YES_NO_OPTION);
+        int ret = JOptionPane.showConfirmDialog(parent, message, "Confirm Dialog", JOptionPane.YES_NO_OPTION);
         return ret == JOptionPane.YES_OPTION;
     }
 
@@ -190,8 +188,8 @@ public class GUIUtil {
      */
     public static String getClipboardText() {
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        Transferable content = clipboard.getContents(null);//从系统剪切板中获取数据
-        if (content.isDataFlavorSupported(DataFlavor.stringFlavor)) {//判断是否为文本类型
+        Transferable content = clipboard.getContents(null);
+        if (content.isDataFlavorSupported(DataFlavor.stringFlavor)) {
             String text = null;//从数据中获取文本值
             try {
                 text = (String) content.getTransferData(DataFlavor.stringFlavor);
@@ -242,29 +240,21 @@ public class GUIUtil {
     public static <T extends Container> T getTopParent(Container com) {
         return (T) getUpParent(com, Window.class);
     }
+
     /**
-     * 获取给定组件的顶层组件(parent)，如果给定组件不存在指定类型的父类组件，返回null
-     *
-     * @param com
-     *            --给定的子组件
-     * @param parent
-     *            --父组件的类型
-     * @return --可视的父类容器
+     * @see #getUpParent(Container, Class, boolean)
      */
     public static <T> T getUpParent(Container com, Class<T> parent) {
         return getUpParent(com, parent, true);
     }
 
     /**
-     * 获取给定组件的顶层组件(parent)，如果参数：isMustVisible为true，必须返回可视的父容器窗口；如果给定组件不存在指定类型的父类组件，返回null
+     * Retrieve the parent component matched specified type.
      *
-     * @param com
-     *            --给定的子组件
-     * @param parent
-     *            --父组件的类型
-     * @param isMustVisible
-     *            --是否必须获取可视的父容器
-     * @return --可视的父类容器
+     * @param com current component.
+     * @param parent The class type of  parent component
+     * @param isMustVisible specify whether returned parent component must be visible.
+     * @return the parent component object.
      */
     public static <T> T getUpParent(Container com, Class<T> parent,
                                                       boolean isMustVisible) {
@@ -275,7 +265,7 @@ public class GUIUtil {
         Container con = com.getParent();
         for (; con != null && !parent.isAssignableFrom(con.getClass()); con = con
                 .getParent());
-        if (con != null && !con.isVisible() && isMustVisible) // 如果必须获取可视的组件容器，将递归调用自身方法
+        if (con != null && !con.isVisible() && isMustVisible)
         {
             con = (Container) getUpParent(con, parent, isMustVisible);
         }
@@ -283,7 +273,7 @@ public class GUIUtil {
     }
 
     /**
-     * 获取剪贴板上的文本数据.
+     * Return the text content on clipboard.
      */
     public static String getClipText() {
         Transferable transfer = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
@@ -300,7 +290,7 @@ public class GUIUtil {
         }
     }
     /**
-     * 获取剪贴板上的文件列表.
+     * Return the file list on clipboard.
      */
     public static java.util.List<File> getClipFile() {
         Transferable transfer = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
@@ -372,7 +362,7 @@ public class GUIUtil {
         fc.setMultiSelectionEnabled(isMultiSelect);
 
         int select = isOpen?fc.showOpenDialog(container):fc.showSaveDialog(container);
-        if (select == JFileChooser.APPROVE_OPTION) { // 如果选择了文件
+        if (select == JFileChooser.APPROVE_OPTION) {
             File[] files;
             if (fc.isMultiSelectionEnabled()) {
                 files = fc.getSelectedFiles();
@@ -412,20 +402,19 @@ public class GUIUtil {
             fc.setFileFilter(initialFilter);
         fc.setMultiSelectionEnabled(isMutiSelectable);
         int select = isOpen?fc.showOpenDialog(con):fc.showSaveDialog(con);
-        if (select == JFileChooser.APPROVE_OPTION) { // 如果选择了文件
+        if (select == JFileChooser.APPROVE_OPTION) {
             File[] tmp =null;
             if(isMutiSelectable)
-                tmp=fc.getSelectedFiles(); // 获取选中的文件
+                tmp=fc.getSelectedFiles();
             else
             {
                 tmp=new File[]{fc.getSelectedFile()};
             }
             if (tmp != null&&tmp.length==1) {//do only  when one file is selected .
-                // currentPath = tmp.getParent(); //更新当前所选文件的目录
                 if (isPromptOnExist&&!isOpen&&tmp[0].exists()) {
                     int result = JOptionPane.showConfirmDialog(con,
-                            "文件已经存在，是否覆盖",
-                            "confirm!", JOptionPane.YES_NO_OPTION);
+                            "The file exists already, overwrite it?",
+                            "Confirm!", JOptionPane.YES_NO_OPTION);
                     if (result == JOptionPane.NO_OPTION)
                         return selectFileByFilter(con,initialFilter ,filters, selectedFiles,currentDir,isMutiSelectable,isOpen,isPromptOnExist);
                 }

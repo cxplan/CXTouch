@@ -2,7 +2,6 @@ package com.cxplan.projection;
 
 import com.alee.global.StyleConstants;
 import com.alee.utils.WebUtils;
-import com.cxplan.projection.core.ServiceFactory;
 import com.cxplan.projection.core.connection.DeviceConnectionAdapter;
 import com.cxplan.projection.core.connection.DeviceConnectionEvent;
 import com.cxplan.projection.core.connection.DeviceConnectionListener;
@@ -49,6 +48,7 @@ public class MainFrame extends BaseFrame {
     private IApplication application;
     private Map<String , DeviceComponent> deviceMap;
     private DeviceConnectionListener connectionListener;
+    private DeviceItemMouseListener deviceItemMouseListener;
 
     public MainFrame(IApplication application) {
         super("CXTouch");
@@ -59,6 +59,7 @@ public class MainFrame extends BaseFrame {
         initView();
         setSize(500, 600);
 
+        deviceItemMouseListener = new DeviceItemMouseListener();
         connectionListener = new DeviceConnectionChangedListener();
         application.addDeviceConnectionListener(connectionListener);
         Setting.getInstance().addPropertyChangeListener(new DeviceSettingListener());
@@ -378,22 +379,28 @@ public class MainFrame extends BaseFrame {
             Color background = MainFrame.this.getContentPane().getBackground();
             setBackground(background);
             setLayout(new JideBoxLayout(this, JideBoxLayout.LINE_AXIS));
+            addMouseListener(deviceItemMouseListener);
 
             JPanel labelPane = new JPanel();
-            labelPane.setBackground(background);
+            labelPane.addMouseListener(deviceItemMouseListener);
+            labelPane.setOpaque(false);
             labelPane.setLayout(new JideBoxLayout(labelPane, JideBoxLayout.Y_AXIS));
             deviceNameLabel = new JLabel(application.getDeviceName(connection.getId()));
+            deviceNameLabel.addMouseListener(deviceItemMouseListener);
             labelPane.add(deviceNameLabel, JideBoxLayout.FIX);
             serialLabel = new JLabel("Serial: " + connection.getId());
+            serialLabel.addMouseListener(deviceItemMouseListener);
             serialLabel.setForeground(StyleConstants.infoTextColor);
             labelPane.add(serialLabel, JideBoxLayout.FIX);
 
             add(labelPane, JideBoxLayout.VARY);
 
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-            buttonPanel.setBackground(background);
+            buttonPanel.setOpaque(false);
+            buttonPanel.addMouseListener(deviceItemMouseListener);
             //view button
             IconButton viewBtn = new IconButton(IconUtil.getIcon("/image/view.png"));
+            viewBtn.addMouseListener(deviceItemMouseListener);
             String viewBtnTooltip = stringMgr.getString("view.button.tooltip");
             viewBtn.setToolTipText(viewBtnTooltip);
             viewBtn.addActionListener(new ActionListener() {
@@ -405,6 +412,7 @@ public class MainFrame extends BaseFrame {
             buttonPanel.add(viewBtn);
             //setting button.
             IconButton settingBtn = new IconButton(IconUtil.getIcon("/image/setting.png"));
+            settingBtn.addMouseListener(deviceItemMouseListener);
             String settingBtnTooltip = stringMgr.getString("setting.button.tooltip");
             settingBtn.setToolTipText(settingBtnTooltip);
             settingBtn.addActionListener(new ActionListener() {
@@ -438,6 +446,43 @@ public class MainFrame extends BaseFrame {
         }
     }
 
+    private class DeviceItemMouseListener extends MouseAdapter {
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            JComponent component = (JComponent)e.getSource();
+            DeviceComponent parent = GUIUtil.getUpParent(component, DeviceComponent.class);
+            if (parent != null) {
+                parent.setBackground(StyleConstants.backgroundColor);
+            }
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e) {
+            JComponent component = (JComponent)e.getSource();
+            DeviceComponent parent = GUIUtil.getUpParent(component, DeviceComponent.class);
+            if (parent != null) {
+                Color normalBackground = MainFrame.this.getContentPane().getBackground();
+                parent.setBackground(normalBackground);
+            }
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            if (e.getButton() != MouseEvent.BUTTON1 || e.getClickCount() != 1) {
+                return;
+            }
+            if(e.getSource() instanceof JButton) {
+                return;
+            }
+            JComponent component = (JComponent)e.getSource();
+            DeviceComponent parent = GUIUtil.getUpParent(component, DeviceComponent.class);
+            if (parent == null) {
+                return;
+            }
+            showImageFrame(parent.connection);
+        }
+    }
 
     private class DeviceConnectionChangedListener extends DeviceConnectionAdapter {
         @Override
