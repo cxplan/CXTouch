@@ -94,17 +94,4 @@ public class ImageProcessThread extends Thread {
 
     }
 
-    private byte[] extraFirstFrame(int realWidth, int realHeight) {
-        Image rawImage;
-        try {
-            rawImage = application.getDeviceService().takeScreenshot(connection.getId(), realWidth, realHeight );
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            return null;
-        }
-
-        byte[] data = ImageUtil.image2Bytes(rawImage.getScaledInstance(realWidth, realHeight, Image.SCALE_SMOOTH), "jpg");
-        return data;
-    }
-
 }

@@ -94,6 +94,9 @@ public class DeviceImageFrame extends BaseWebFrame {
     private boolean isFirstFrame = true;
     private int currentImageWidth = -1;
     private int currentImageHeight = -1;
+    //The flag indicates whether current image frame is in projection.
+    //When the connection status of image channel is changed, controller will notify device of current status.
+    private boolean isInProjection;
 
     private DeviceImageFrame(IDeviceConnection connection, IApplication application ) {
         super(application.getDeviceName(connection.getId()) + "(" + connection.getId() + ")");
@@ -104,6 +107,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         this.application = application;
         this.connection = connection;
         monkeyService = application.getDeviceService();
+        isInProjection = true;
 
         initView();
         installListener();
@@ -134,8 +138,23 @@ public class DeviceImageFrame extends BaseWebFrame {
         openScreenProjection();
     }
 
+    /**
+     * Return current status of projection operation.
+     * The returned value is always true in projection time including the image channel is interrupted temporarily.
+     * the status value is false only when projection frame is disposed.
+     *
+     * When the connection status of image channel is changed, controller will notify device of current status.
+     *
+     * @return true: in projection status.
+     *         false: The projection operation is terminated.
+     */
+    public boolean isInProjection() {
+        return isInProjection;
+    }
+
     @Override
     public void dispose() {
+        isInProjection = false;
         connection.closeImageChannel();
         application.removeDeviceConnectionListener(deviceConnectionListener);
         super.dispose();
@@ -148,10 +167,10 @@ public class DeviceImageFrame extends BaseWebFrame {
     public void setNavigationBarVisible(boolean visible) {
         if (visible) {
             clientScreen.showExtComponent();
-            changeFrameSize();
+            adaptFrameSize();
         } else {
             clientScreen.hideExtComponent();
-            changeFrameSize();
+            adaptFrameSize();
         }
     }
 
@@ -163,6 +182,11 @@ public class DeviceImageFrame extends BaseWebFrame {
         }
     }
 
+    /**
+     * Open image channel when connection is connected.
+     * This method will create a connection with image service run in device,
+     * and then wait util a image data is coming. If the image channel is on connected status, do nothing.
+     */
     public void openImageChannel() {
         if (!connection.isImageChannelAvailable()) {
             showWaitingTip(stringMgr.getString("status.connecting"));
@@ -183,11 +207,11 @@ public class DeviceImageFrame extends BaseWebFrame {
             });
             if (ret) {
                 showWaitingTip(stringMgr.getString("status.waitimage"));
-                takeScreenshot();
+                isFirstFrame = true;
             }
         } else {
             showWaitingTip(stringMgr.getString("status.waitimage"));
-            takeScreenshot();
+            isFirstFrame = true;
         }
     }
 
@@ -236,11 +260,19 @@ public class DeviceImageFrame extends BaseWebFrame {
         }
     }
 
+    /**
+     * This method is invoked when initialize frame size, Calculate a suitable size
+     * matched with displayed image for frame. The size result should refer to the rotation of current screen.
+     */
     private void calculateFrameSize() {
-        int prefHeight = (int) (connection.getScreenWidth() * connection.getZoomRate());
-        int prefWidth = (int) (connection.getScreenHeight() * connection.getZoomRate());
+        int prefWidth = (int) (connection.getScreenWidth() * connection.getZoomRate());
+        int prefHeight = (int) (connection.getScreenHeight() * connection.getZoomRate());
 
-        checkImageSizeChanged(prefWidth, prefHeight);
+        if (connection.getRotation() % 2 == 0) {
+            checkImageSizeChanged(prefWidth, prefHeight);
+        } else {
+            checkImageSizeChanged(prefHeight, prefWidth);
+        }
         clientScreen.getCanvas().setVisible(false);
     }
 
@@ -289,7 +321,7 @@ public class DeviceImageFrame extends BaseWebFrame {
                     openImageChannel();
                 } else if (event.getType() == DeviceConnectionEvent.ConnectionType.IMAGE) {
                     showWaitingTip(stringMgr.getString("status.waitimage"));
-                    takeScreenshot();
+                    isFirstFrame = true;
                 }
             }
 
@@ -361,20 +393,21 @@ public class DeviceImageFrame extends BaseWebFrame {
         }
     }
 
-    private void takeScreenshot() {
+    /*private void takeScreenshot() {
         Image image;
         try {
-            image = monkeyService.takeScreenshot(connection.getId(), currentImageWidth, currentImageHeight);
+            image = monkeyService.takeScreenshot(connection.getId(), (float) connection.getZoomRate());
         } catch (MessageException e) {
             logger.error(e.getMessage(), e);
             GUIUtil.showErrorMessageDialog(e.getMessage());
             return;
         }
 
-        isFirstFrame = false;
-        showScreenResult();
-        imageQueue.offer(image);
-    }
+        if (imageQueue.size() == 0) {
+            showScreenResult();
+            imageQueue.offer(image);
+        }
+    }*/
 
     private JPanel createDeviceButtonPanel() {
         JPanel panel = new JPanel();
@@ -449,7 +482,9 @@ public class DeviceImageFrame extends BaseWebFrame {
         showWaitingTip(text, WAITING);
     }
     /**
-     * Hide screen projection, and show some prompted information
+     * Hide screen projection, and show a prompted information.
+     * When projection is interrupted temporarily, this method should be invoked,
+     * it can take a good experience to user.
      *
      * @param text the information displayed for user.
      * @param icon the icon object , can be null.
@@ -538,19 +573,20 @@ public class DeviceImageFrame extends BaseWebFrame {
             currentImageHeight = newHeight;
             currentImageWidth = newWidth;
 
-            //update zoom rate
-            double newZoomRate;
-            if ((connection.getRotation() % 2) != 0) {
-                newZoomRate = (double) currentImageWidth / connection.getScreenWidth();
+            //update zoom rate of canvas.
+            //Warning: this zoom rate is different from the rate of image.
+            double newCanvasZoomRate;
+            if ((connection.getRotation() % 2) == 0) {
+                newCanvasZoomRate = (double) currentImageWidth / connection.getScreenWidth();
             } else {
-                newZoomRate = (double) currentImageWidth / connection.getScreenHeight();
+                newCanvasZoomRate = (double) currentImageWidth / connection.getScreenHeight();
             }
-            clientScreen.setDeviceZoomRate(newZoomRate);
-
-            changeFrameSize();
+            clientScreen.setDeviceZoomRate(newCanvasZoomRate);
+            adaptFrameSize();
         }
+
     }
-    private void changeFrameSize() {
+    private void adaptFrameSize() {
         int maxHeight = (int) (Toolkit.getDefaultToolkit().getScreenSize().height * 0.8);
         int optimalWidth = currentImageWidth;
         int optimalHeight = currentImageHeight;
@@ -558,10 +594,11 @@ public class DeviceImageFrame extends BaseWebFrame {
             optimalWidth = (int)((double)maxHeight * optimalWidth / optimalHeight);
             optimalHeight = maxHeight;
         }
+
         clientScreen.setCanvasSize(optimalWidth, optimalHeight);
 
         pack();
-        System.out.println("Frame size is changed:[" + getWidth() + "," + getHeight() + "]");
+        logger.info("Frame size is changed:[{}x{}]", getWidth(), getHeight());
     }
 
     MonkeyInputListener monkeyInputListener = new MonkeyInputListener() {

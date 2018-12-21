@@ -331,6 +331,7 @@ public class MainFrame extends BaseFrame {
                     shouldUpdateBorder = true;
                 }
                 deviceListPane.remove(i);
+                break;
             }
         }
 
@@ -469,6 +470,11 @@ public class MainFrame extends BaseFrame {
         public void connected(DeviceConnectionEvent event) {
             //send image projection event
             if (event.getType() == DeviceConnectionEvent.ConnectionType.IMAGE) {
+                DeviceImageFrame instance = DeviceImageFrame.getInstance(event.getSource().getId(),
+                        application, false);
+                if (instance == null) {
+                    return;
+                }
                 IInfrastructureService infrastructureService = application.getInfrastructureService();
                 infrastructureService.notifyProjectionFlag(event.getSource().getId(), true);
             }
@@ -478,6 +484,11 @@ public class MainFrame extends BaseFrame {
         public void connectionClosed(DeviceConnectionEvent event) {
             //send image projection event
             if (event.getType() == DeviceConnectionEvent.ConnectionType.IMAGE) {
+                DeviceImageFrame instance = DeviceImageFrame.getInstance(event.getSource().getId(),
+                        application, false);
+                if (instance != null && instance.isInProjection()) {
+                    return;
+                }
                 IInfrastructureService infrastructureService = application.getInfrastructureService();
                 infrastructureService.notifyProjectionFlag(event.getSource().getId(), false);
             }

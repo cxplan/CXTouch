@@ -1,8 +1,10 @@
 package com.cxplan.projection.util;
 
+import com.cxplan.projection.model.IDeviceMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
 import java.io.*;
 import java.util.Properties;
 import java.util.StringTokenizer;
@@ -47,6 +49,23 @@ public class CommonUtil {
         } catch (Exception e) {
             logger.error("Returned string is not pid: " + processIdString);
             return -1;
+        }
+    }
+
+    public static Point getDeviceDisplaySize(IDeviceMeta deviceMeta) {
+        return getDeviceDisplaySize(deviceMeta, 1.0f);
+    }
+    public static Point getDeviceDisplaySize(IDeviceMeta deviceMeta, float zoomRate) {
+        if (deviceMeta == null) {
+            return null;
+        }
+
+        int rotation = deviceMeta.getRotation();
+        if (rotation % 2 == 1) {
+            return new Point((int)(deviceMeta.getScreenWidth() * zoomRate),
+                    (int)( deviceMeta.getScreenHeight() * zoomRate));
+        } else {
+            return new Point((int) (deviceMeta.getScreenHeight() * zoomRate), (int) (deviceMeta.getScreenWidth() * zoomRate));
         }
     }
 

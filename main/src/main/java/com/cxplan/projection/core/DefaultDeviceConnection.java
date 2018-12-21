@@ -326,7 +326,6 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
 
             Thread.sleep(1000);
 
-            long timeout = 10000;//connect timeout
             int forwardPort = getMessageForwardPort();
             //ensure the forward available.
             device.createForward(forwardPort, ForwardManager.MESSAGE_REMOTE_PORT);
@@ -337,13 +336,13 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
 
             while (!connFuture.isDone() && !connFuture.isConnected()) {
                 try {
-                    Thread.sleep(timeout);
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                 }
             }
             if (!connFuture.isConnected()) {
                 connFuture.cancel();
-                String errorMsg = "Connecting to cxplan server is timeout[" + timeout + " ms]: forward port=" + forwardPort;
+                String errorMsg = "Connecting to cxplan server is timeout: forward port=" + forwardPort;
                 logger.error(errorMsg);
                 throw new RuntimeException(errorMsg);
             }
@@ -489,20 +488,6 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             //set up ADB inputer as default input method.
             //TODO is necessary, a restore action is needed also.
             checkInputerInstallation();
-
-            //check minicap process
-            /*int pid = infrastructureService.getMinicapProcessID(getId());
-            int count = 0;
-            while (pid < 0 && count < 50) {
-                count++;
-                Thread.sleep(200);
-                pid = infrastructureService.getMinicapProcessID(getId());
-            }
-            if (pid < 0) {
-                logger.error("Starting minicap process failed: {}", getId());
-                return;
-            }
-            logger.info("The minicap process is started: {}, pid={}", getId(), pid);*/
 
             if (imageChannel != null) {
                 try {

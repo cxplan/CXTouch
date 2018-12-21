@@ -14,6 +14,8 @@ import com.cxplan.projection.core.connection.IDeviceConnection;
 import com.cxplan.projection.net.message.Message;
 import com.cxplan.projection.net.message.MessageException;
 import com.cxplan.projection.net.message.MessageUtil;
+import com.cxplan.projection.util.CommonUtil;
+import com.cxplan.projection.util.ImageUtil;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,35 +135,32 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
     }
 
     @Override
-    public Image takeScreenshot(String deviceId, int realWidth, int realHeight) {
+    public Image takeScreenshot(String deviceId, float zoomRate) {
         DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
         if (pm == null) {
             String error = "The device is offline: " + deviceId;
             throw new RuntimeException(error);
         }
 
-        RawImage rawImage;
+        Message message = new Message(MessageUtil.CMD_DEVICE_IMAGE);
+        message.setParameter("type", (short)4);
+        message.setParameter("zr", zoomRate);
+        message.setParameter("q", 50);
+
+        Point size = CommonUtil.getDeviceDisplaySize(pm, zoomRate);
+        int realWidth = size.x;
+        int realHeight = size.y;
+
+        Message retMsg;
         try {
-            rawImage = pm.getDevice().getScreenshot(10, TimeUnit.SECONDS);
-        } catch (Exception e) {
+            retMsg = request(pm, message);
+        } catch (MessageException e) {
             logger.error(e.getMessage(), e);
             return buildEmptyImage(realWidth, realHeight);
         }
 
-        if (rawImage == null) {
-            return buildEmptyImage(realWidth, realHeight);
-        }
-        BufferedImage bufferedImage = new BufferedImage(rawImage.width,
-                rawImage.height, BufferedImage.TYPE_INT_ARGB);
-        int index = 0;
-        int IndexInc = rawImage.bpp >> 3;
-        for (int y = 0; y < rawImage.height; y++) {
-            for (int x = 0; x < rawImage.width; x++) {
-                int value = rawImage.getARGB(index);
-                index += IndexInc;
-                bufferedImage.setRGB(x, y, value);
-            }
-        }
+        byte[] data = retMsg.getParameter("img");
+        Image bufferedImage = ImageUtil.readImage(data);
 
         return bufferedImage.getScaledInstance(realWidth, realHeight, Image.SCALE_SMOOTH);
     }

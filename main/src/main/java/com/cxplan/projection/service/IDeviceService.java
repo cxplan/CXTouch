@@ -157,8 +157,7 @@ public interface IDeviceService {
     /**
      * Take a screenshot image of device.
      * @param deviceId the device ID.
-     * @param realWidth the virtual width of returned image.
-     * @param realHeight the virtual height of returned image.
+     * @param zoomRate the rate of zooming.
      */
-    Image takeScreenshot(String deviceId, int realWidth, int realHeight) throws MessageException;
+    Image takeScreenshot(String deviceId, float zoomRate) throws MessageException;
 }
