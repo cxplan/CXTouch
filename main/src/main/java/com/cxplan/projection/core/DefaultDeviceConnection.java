@@ -324,7 +324,7 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             IInfrastructureService infrastructureService = application.getInfrastructureService();
             infrastructureService.startMainProcess(device);
 
-            Thread.sleep(1000);
+            Thread.sleep(800);
 
             int forwardPort = getMessageForwardPort();
             //ensure the forward available.
@@ -336,7 +336,7 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
 
             while (!connFuture.isDone() && !connFuture.isConnected()) {
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(50);
                 } catch (InterruptedException e) {
                 }
             }

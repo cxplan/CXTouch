@@ -11,11 +11,17 @@ import com.cxplan.projection.net.message.MessageException;
 public interface IInfrastructureService {
 
     /**
-     * Check whether the device mediate package is installed.
-     * @return true: install already, false: not install.
+     * Return the installed path of main process package,
+     * a null value will be returned if the main process package is not installed.
      */
-    boolean checkMainPackageInstallation(String deviceId);
+    String getMainPackageInstallPath(String deviceId);
 
+    /**
+     * Install main process application to specified device.
+     *
+     * @param device the device object.
+     */
+    void installMainProcess(IDevice device);
     /**
      * Start main process on specified device.
      */

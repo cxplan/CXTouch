@@ -1,6 +1,7 @@
 package com.cxplan.projection.service;
 
 import com.android.ddmlib.IDevice;
+import com.android.ddmlib.InstallException;
 import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.core.CXService;
 import com.cxplan.projection.core.DefaultDeviceConnection;
@@ -36,13 +37,22 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
     private Map<String, Thread> mainThreadMap = new ConcurrentHashMap<>();
 
     @Override
-    public boolean checkMainPackageInstallation(String deviceId) {
+    public String getMainPackageInstallPath(String deviceId) {
         DefaultDeviceConnection connection = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
         if (connection == null) {
             throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
         }
         String mainPackagePath = AdbUtil.getPackagePath("com.cxplan.mediate", connection.getDevice());
-        return mainPackagePath != null;
+        return mainPackagePath;
+    }
+
+    @Override
+    public void installMainProcess(IDevice device) {
+        try {
+            device.installPackage("res/mediate/CXTouch.apk", true);
+        } catch (InstallException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 
     @Override

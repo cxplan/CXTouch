@@ -3,7 +3,6 @@ package com.cxplan.projection.ui;
 import com.alee.extended.window.ComponentMoveAdapter;
 import com.alee.global.StyleConstants;
 import com.cxplan.projection.IApplication;
-import com.cxplan.projection.MainFrame;
 import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.core.connection.ConnectStatusListener;
 import com.cxplan.projection.core.connection.DeviceConnectionEvent;
@@ -193,7 +192,27 @@ public class DeviceImageFrame extends BaseWebFrame {
         if (connection.isConnected()) {
             openImageChannel();
         } else {
-            connection.connect();
+            Runnable task = new Runnable() {
+                @Override
+                public void run() {
+                    String path = application.getInfrastructureService().getMainPackageInstallPath(connection.getId());
+                    if (path == null) {
+                        String installTip = stringMgr.getString("status.main_process.install");
+                        showWaitingTip(installTip);
+                        try {
+                            application.getInfrastructureService().installMainProcess(connection.getDevice());
+                        } catch (Exception ex) {
+                            logger.error(ex.getMessage(), ex);
+                            String installFailText = stringMgr.getString("status.install.fail");
+                            GUIUtil.showErrorMessageDialog(installFailText + ": " + ex.getMessage());
+                            return;
+                        }
+                    }
+                    showWaitingTip(stringMgr.getString("status.connecting"));
+                    connection.connect();
+                }
+            };
+            application.getExecutors().submit(task);
         }
     }
 
