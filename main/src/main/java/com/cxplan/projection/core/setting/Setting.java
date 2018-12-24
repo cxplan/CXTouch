@@ -1,5 +1,6 @@
 package com.cxplan.projection.core.setting;
 
+import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.util.StringUtil;
 import com.cxplan.projection.util.SystemUtil;
 
@@ -55,10 +56,18 @@ public class Setting {
     }
 
     public void saveSystemSetting() {
+        //system
         try {
             systemProp.saveToFile(this.filename);
         } catch (IOException e) {
             SystemUtil.error(e.getMessage(), e);
+        }
+
+        //device
+        if (devicePropMap.size() > 0) {
+            for (String deviceId : devicePropMap.keySet()) {
+                saveDeviceSetting(deviceId);
+            }
         }
     }
 

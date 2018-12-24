@@ -1,7 +1,3 @@
-/**
- * The code is written by ytx, and is confidential.
- * Anybody must not broadcast these files without authorization.
- */
 package com.cxplan.projection.ui.util;
 
 import com.cxplan.projection.ui.component.WindowMeta;
@@ -36,6 +32,7 @@ public class GUIUtil {
 
     private static Map<Class<? extends Window>, Set<Window>> windowMap = new ConcurrentHashMap<>();
     public static FileFilter[] imageFilters;
+
     static {
         imageFilters = new FileFilter[6];
         imageFilters[0] = new ImageFileFilter(new String[]{"jpg", "png", "jpeg", "bmp", "gif"});
@@ -56,12 +53,13 @@ public class GUIUtil {
             return null;
         } else {
             for (Window window : windowSet) {
-                return (T)window;
+                return (T) window;
             }
         }
 
         return null;
     }
+
     public static void setWindow(Class<? extends Window> clazz, Window window) {
         WindowMeta wm = window.getClass().getAnnotation(WindowMeta.class);
         boolean multiInstance = false;
@@ -84,6 +82,7 @@ public class GUIUtil {
             windowSet.add(window);
         }
     }
+
     public static boolean removeWindow(Window window) {
         Set<Window> windowSet = windowMap.get(window.getClass());
         if (windowSet == null) {
@@ -94,7 +93,7 @@ public class GUIUtil {
 
     public static void resetWindows() {
         Iterator<Map.Entry<Class<? extends Window>, Set<Window>>> it = windowMap.entrySet().iterator();
-        while(it.hasNext()){
+        while (it.hasNext()) {
             Map.Entry<Class<? extends Window>, Set<Window>> entry = it.next();
             Set<Window> windowSet = entry.getValue();
             boolean isMain = false;
@@ -117,6 +116,7 @@ public class GUIUtil {
         }
         logger.info("The windowMap size: {}", windowMap.size());
     }
+
     /**
      * Place frame container at the center of owner container.
      *
@@ -139,14 +139,14 @@ public class GUIUtil {
                         .getHeight() - frame.getHeight()) / 2), frame
                         .getWidth(), frame.getHeight());
     }
-    public static void centerToOwnerWindow(Window frame)
-    {
-        if(frame==null)
+
+    public static void centerToOwnerWindow(Window frame) {
+        if (frame == null)
             return;
-        Container owner=frame.getOwner();
-        if(owner==null)
+        Container owner = frame.getOwner();
+        if (owner == null)
             return;
-        centerFrameToFrame(owner,frame);
+        centerFrameToFrame(owner, frame);
     }
 
     public static void showWindowCenterToOwner(Window frame) {
@@ -158,15 +158,19 @@ public class GUIUtil {
     public static void showErrorMessageDialog(String message) {
         showMessageDialog(findLikelyOwnerWindow(), message, "ERROR", JOptionPane.ERROR_MESSAGE);
     }
+
     public static void showErrorMessageDialog(String message, String title) {
         showMessageDialog(findLikelyOwnerWindow(), message, title, JOptionPane.ERROR_MESSAGE);
     }
+
     public static void showInfoMessageDialog(String message) {
         showInfoMessageDialog(message, "INFO");
     }
+
     public static void showInfoMessageDialog(String message, String title) {
         showMessageDialog(findLikelyOwnerWindow(), message, title, JOptionPane.INFORMATION_MESSAGE);
     }
+
     public static void showMessageDialog(final Component parent, final String message, final String title, final int messageType) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -175,9 +179,11 @@ public class GUIUtil {
             }
         });
     }
+
     public static boolean showConfirmDialog(String message) {
         return showConfirmDialog(findLikelyOwnerWindow(), message);
     }
+
     public static boolean showConfirmDialog(Component parent, String message) {
         int ret = JOptionPane.showConfirmDialog(parent, message, "Confirm Dialog", JOptionPane.YES_NO_OPTION);
         return ret == JOptionPane.YES_OPTION;
@@ -201,9 +207,11 @@ public class GUIUtil {
             return null;
         }
     }
+
     public static String showInputDialog(String message) {
         return showInputDialog(message, null);
     }
+
     /**
      * Null indicates user cancel input.
      */
@@ -218,11 +226,12 @@ public class GUIUtil {
             return null;
         }
         value = value.trim();
-        if(StringUtil.isEmpty(value)) {
+        if (StringUtil.isEmpty(value)) {
             return showInputDialog(message, initValue);
         }
         return value;
     }
+
     /**
      * Returns the focused Window, if the focused Window is in the same context
      * as the calling thread. The focused Window is the Window that is or
@@ -251,25 +260,25 @@ public class GUIUtil {
     /**
      * Retrieve the parent component matched specified type.
      *
-     * @param com current component.
-     * @param parent The class type of  parent component
+     * @param com           current component.
+     * @param parent        The class type of  parent component
      * @param isMustVisible specify whether returned parent component must be visible.
      * @return the parent component object.
      */
     public static <T> T getUpParent(Container com, Class<T> parent,
-                                                      boolean isMustVisible) {
+                                    boolean isMustVisible) {
         if (com == null || parent == null)
             return null;
         if (parent == com.getClass())
-            return (T)com;
+            return (T) com;
         Container con = com.getParent();
         for (; con != null && !parent.isAssignableFrom(con.getClass()); con = con
-                .getParent());
-        if (con != null && !con.isVisible() && isMustVisible)
-        {
+                .getParent())
+            ;
+        if (con != null && !con.isVisible() && isMustVisible) {
             con = (Container) getUpParent(con, parent, isMustVisible);
         }
-        return (T)con;
+        return (T) con;
     }
 
     /**
@@ -289,6 +298,7 @@ public class GUIUtil {
             return null;
         }
     }
+
     /**
      * Return the file list on clipboard.
      */
@@ -310,6 +320,22 @@ public class GUIUtil {
     public static String lastSelectedDir;
 
     /**
+     * Select a file location to save data.
+     *
+     * @param con        the parent container.
+     * @param sampleName the initial name of file.
+     * @return a path of file, null value will be returned if nothing is selected.
+     */
+    public static File saveFile(Container con, String sampleName) {
+        File[] ret = selectFileByFilter(con, null, null, new String[]{sampleName},
+                lastSelectedDir == null ? "" : lastSelectedDir, false, false, false);
+        if (ret == null || ret.length == 0) {
+            return null;
+        }
+        return ret[0];
+    }
+
+    /**
      * open a image, single file only
      */
     public static File selectImageFile(Container con) {
@@ -317,16 +343,13 @@ public class GUIUtil {
         if (ret == null) {
             return null;
         } else {
-            lastSelectedDir = ret[0].getParent();
             return ret[0];
         }
     }
+
     public static File[] selectImageFile(Container con, boolean isMulti) {
         File[] ret = selectFileByFilter(con, imageFilters[0], imageFilters, null,
                 lastSelectedDir == null ? "" : lastSelectedDir, isMulti, true, false);
-        if (ret != null && ret.length > 0) {
-            lastSelectedDir = ret[0].getParent();
-        }
         return ret;
     }
 
@@ -336,7 +359,6 @@ public class GUIUtil {
         if (ret == null) {
             return null;
         } else {
-            lastSelectedDir = ret[0].getParent();
             return ret;
         }
     }
@@ -348,7 +370,6 @@ public class GUIUtil {
         if (ret == null) {
             return null;
         } else {
-            lastSelectedDir = ret[0].getParent();
             return ret;
         }
     }
@@ -361,7 +382,7 @@ public class GUIUtil {
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         fc.setMultiSelectionEnabled(isMultiSelect);
 
-        int select = isOpen?fc.showOpenDialog(container):fc.showSaveDialog(container);
+        int select = isOpen ? fc.showOpenDialog(container) : fc.showSaveDialog(container);
         if (select == JFileChooser.APPROVE_OPTION) {
             File[] files;
             if (fc.isMultiSelectionEnabled()) {
@@ -382,11 +403,9 @@ public class GUIUtil {
                                             String currentDir, boolean isMutiSelectable, boolean isOpen, boolean isPromptOnExist) {
         JFileChooser fc = new JFileChooser(currentDir);
 
-        if(filters!=null)
-        {
-            for(int i=0;i<filters.length;i++)
-            {
-                if(filters[i]==null)
+        if (filters != null) {
+            for (int i = 0; i < filters.length; i++) {
+                if (filters[i] == null)
                     continue;
                 fc.addChoosableFileFilter(filters[i]);
             }
@@ -398,26 +417,31 @@ public class GUIUtil {
             }
             fc.setSelectedFiles(tmpFiles);
         }
-        if(initialFilter!=null)
+        if (initialFilter != null)
             fc.setFileFilter(initialFilter);
         fc.setMultiSelectionEnabled(isMutiSelectable);
-        int select = isOpen?fc.showOpenDialog(con):fc.showSaveDialog(con);
+        int select = isOpen ? fc.showOpenDialog(con) : fc.showSaveDialog(con);
         if (select == JFileChooser.APPROVE_OPTION) {
-            File[] tmp =null;
-            if(isMutiSelectable)
-                tmp=fc.getSelectedFiles();
-            else
-            {
-                tmp=new File[]{fc.getSelectedFile()};
+            File[] tmp;
+            if (isMutiSelectable)
+                tmp = fc.getSelectedFiles();
+            else {
+                tmp = new File[]{fc.getSelectedFile()};
             }
-            if (tmp != null&&tmp.length==1) {//do only  when one file is selected .
-                if (isPromptOnExist&&!isOpen&&tmp[0].exists()) {
+            if (tmp != null && tmp.length == 1) {//do only  when one file is selected .
+                if (isPromptOnExist && !isOpen && tmp[0].exists()) {
                     int result = JOptionPane.showConfirmDialog(con,
-                            "The file exists already, overwrite it?",
+                            "The file exists already, overw" +
+                                    "" +
+                                    "rite it?",
                             "Confirm!", JOptionPane.YES_NO_OPTION);
                     if (result == JOptionPane.NO_OPTION)
-                        return selectFileByFilter(con,initialFilter ,filters, selectedFiles,currentDir,isMutiSelectable,isOpen,isPromptOnExist);
+                        return selectFileByFilter(con, initialFilter, filters, selectedFiles, currentDir, isMutiSelectable, isOpen, isPromptOnExist);
                 }
+            }
+
+            if (tmp != null && tmp.length > 0) {
+                lastSelectedDir = tmp[0].getParent();
             }
             return tmp;
         } else
@@ -427,6 +451,7 @@ public class GUIUtil {
     private static class ImageFileFilter extends FileFilter {
 
         private String[] name;
+
         public ImageFileFilter(String name) {
             this.name = new String[1];
             this.name[0] = name;
@@ -454,6 +479,7 @@ public class GUIUtil {
         public String getDescription() {
             return "image:" + getNameString();
         }
+
         private String getNameString() {
             if (name.length == 1) {
                 return name[0];

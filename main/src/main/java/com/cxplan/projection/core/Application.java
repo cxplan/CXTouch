@@ -11,6 +11,7 @@ import com.cxplan.projection.core.connection.DeviceConnectionListener;
 import com.cxplan.projection.core.connection.DeviceReconnectionManager;
 import com.cxplan.projection.core.connection.IDeviceConnection;
 import com.cxplan.projection.core.setting.Setting;
+import com.cxplan.projection.model.DeviceInfo;
 import com.cxplan.projection.net.DSCodecFactory;
 import com.cxplan.projection.net.DeviceIoHandlerAdapter;
 import com.cxplan.projection.service.IDeviceService;
@@ -164,8 +165,16 @@ public class Application implements IApplication {
                     return;
                 }
 
+                //check screen size
+                if (deviceConnection.getScreenWidth() < 1
+                        || deviceConnection.getScreenHeight() < 1) {
+                    Dimension dim = AdbUtil.getPhysicalSize(device);
+                    DeviceInfo di = (DeviceInfo) deviceConnection.getDeviceMeta();
+                    di.setScreenWidth(dim.width);
+                    di.setScreenHeight(dim.height);
+                }
                 //connect to cxplan.
-                try {
+                /*try {
                     deviceConnection.connect(true);
                 } catch (Exception e) {
                     logger.error("Connecting to device(" + id + ") failed: " + e.getMessage(), e);
@@ -173,7 +182,7 @@ public class Application implements IApplication {
                         deviceReconnectManager.addConnection(deviceConnection);
                     }
                     return;
-                }
+                }*/
 
             }
         };

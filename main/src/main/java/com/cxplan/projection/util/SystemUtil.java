@@ -3,6 +3,7 @@ package com.cxplan.projection.util;
 import com.cxplan.projection.core.connection.IDeviceConnection;
 import com.cxplan.projection.core.setting.Setting;
 import com.cxplan.projection.core.setting.SettingConstant;
+import com.cxplan.projection.ui.util.GUIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +87,16 @@ public class SystemUtil {
         }
     }
 
+    /**
+     * Exit the application.
+     * Save all system property and release resources before exiting.
+     */
+    public static void exit() {
+        Setting.getInstance().putProperty(SettingConstant.KEY_LAST_SELECTED_DIR, GUIUtil.lastSelectedDir);
+        Setting.getInstance().saveSystemSetting();
+
+        System.exit(0);
+    }
     /**
      * Install some necessary items for device connection.
      * <li>name</li>

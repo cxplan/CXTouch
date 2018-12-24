@@ -66,7 +66,8 @@ public class MainFrame extends BaseFrame {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                System.exit(0);
+                dispose();
+                SystemUtil.exit();
             }
         });
 
@@ -277,11 +278,11 @@ public class MainFrame extends BaseFrame {
      */
     private void showImageFrame(IDeviceConnection connection) {
 
-        if (!connection.isConnected()) {
+        /*if (!connection.isConnected()) {
             String notPreparedText = stringMgr.getString("mainframe.device.not.prepared");
             GUIUtil.showErrorMessageDialog(notPreparedText);
             return;
-        }
+        }*/
 
         DeviceImageFrame clientFrame;
         try {
@@ -562,6 +563,12 @@ public class MainFrame extends BaseFrame {
                     return;
                 }
                 clientFrame.setNavigationBarVisible((Boolean)event.getNewValue());
+            } else if (event.getPropertyName().equals(SettingConstant.KEY_DEVICE_TOOLBAR_VISIBLE)) {
+                DeviceImageFrame clientFrame = DeviceImageFrame.getInstance(event.getSource(), application, false);
+                if (clientFrame == null) {
+                    return;
+                }
+                clientFrame.setToolBarVisible((Boolean)event.getNewValue());
             } else if (event.isResult()){
                 String[] keys = event.getChangedKeys();
                 boolean isHit = false;

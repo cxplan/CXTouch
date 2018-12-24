@@ -157,7 +157,8 @@ public interface IDeviceService {
     /**
      * Take a screenshot image of device.
      * @param deviceId the device ID.
-     * @param zoomRate the rate of zooming.
+     * @param zoomRate the rate of zooming, the range of value is 0.0 - 1.0.
+     * @param quality the quality of image, the range of value is 0 - 100.
      */
-    Image takeScreenshot(String deviceId, float zoomRate) throws MessageException;
+    Image takeScreenshot(String deviceId, float zoomRate, int quality) throws MessageException;
 }

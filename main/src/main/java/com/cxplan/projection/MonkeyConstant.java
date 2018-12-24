@@ -36,6 +36,12 @@ public class MonkeyConstant {
     public final static int KEYCODE_DOWN = 20;
     public final static int KEYCODE_UP = 19;
     public final static int KEYCODE_RIGHT = 22;
+    /** Key code constant: Volume Up key.
+     * Adjusts the speaker volume up. */
+    public static final int KEYCODE_VOLUME_UP       = 24;
+    /** Key code constant: Volume Down key.
+     * Adjusts the speaker volume down. */
+    public static final int KEYCODE_VOLUME_DOWN     = 25;
 
     public final static int KEYCODE_BACK = 4;
     public final static int KEYCODE_HOME = 3;

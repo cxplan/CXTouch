@@ -135,7 +135,7 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
     }
 
     @Override
-    public Image takeScreenshot(String deviceId, float zoomRate) {
+    public Image takeScreenshot(String deviceId, float zoomRate, int quality) {
         DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
         if (pm == null) {
             String error = "The device is offline: " + deviceId;
@@ -145,7 +145,7 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
         Message message = new Message(MessageUtil.CMD_DEVICE_IMAGE);
         message.setParameter("type", (short)4);
         message.setParameter("zr", zoomRate);
-        message.setParameter("q", 50);
+        message.setParameter("q", quality);
 
         Point size = CommonUtil.getDeviceDisplaySize(pm, zoomRate);
         int realWidth = size.x;

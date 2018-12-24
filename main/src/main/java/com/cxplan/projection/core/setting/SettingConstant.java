@@ -7,6 +7,10 @@ package com.cxplan.projection.core.setting;
 public class SettingConstant {
 
     /**
+     * The key of Setting item for system.
+     */
+    public static final String KEY_LAST_SELECTED_DIR = "lastSelectedDir";
+    /**
      * The key of Setting item for device.
      */
     public static final String KEY_DEVICE_NAME = "name";

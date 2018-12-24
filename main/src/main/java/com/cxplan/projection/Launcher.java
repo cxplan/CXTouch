@@ -47,6 +47,7 @@ public class Launcher {
         java.util.logging.Logger.getGlobal().setLevel(Level.WARNING);
 
         Setting.getInstance().addPropertyChangeListener(new DeviceSettingListener());//load system setting.
+        GUIUtil.lastSelectedDir = Setting.getInstance().getProperty(SettingConstant.KEY_LAST_SELECTED_DIR, null);
 
         try {
             SwingUtilities.invokeAndWait(new Runnable() {

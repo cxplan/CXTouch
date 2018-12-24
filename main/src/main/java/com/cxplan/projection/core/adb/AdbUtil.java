@@ -5,6 +5,7 @@ import com.cxplan.projection.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -61,6 +62,36 @@ public class AdbUtil {
         } else {
             return "ps";
         }
+    }
+
+    //Physical size: 720x1280
+    public static Dimension getPhysicalSize(IDevice device) {
+        String cmd = "wm size";
+        String ret = shell(cmd, device);
+        if (StringUtil.isEmpty(ret)) {
+            return null;
+        }
+
+        int index = ret.indexOf(":");
+        if (index == -1) {
+            logger.error("The format of wm size is illegal: " + ret);
+            return null;
+        }
+        ret = ret.substring(index + 1).trim();
+        index = ret.indexOf("x");
+        if (index == -1) {
+            logger.error("The format of wm size is illegal: " + ret);
+            return null;
+        }
+
+        int width = StringUtil.getIntValue(ret.substring(0, index), -1);
+        int height = StringUtil.getIntValue(ret.substring(index + 1), -1);
+        if (width == -1 || height == -1) {
+            logger.error("The format of wm size is illegal: " + ret);
+            return null;
+        }
+
+        return new Dimension(width, height);
     }
 
     /**

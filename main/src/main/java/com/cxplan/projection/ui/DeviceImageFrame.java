@@ -1,7 +1,9 @@
 package com.cxplan.projection.ui;
 
 import com.alee.extended.window.ComponentMoveAdapter;
+import com.alee.global.StyleConstants;
 import com.cxplan.projection.IApplication;
+import com.cxplan.projection.MainFrame;
 import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.core.connection.ConnectStatusListener;
 import com.cxplan.projection.core.connection.DeviceConnectionEvent;
@@ -14,6 +16,7 @@ import com.cxplan.projection.i18n.StringManagerFactory;
 import com.cxplan.projection.net.message.MessageException;
 import com.cxplan.projection.service.IDeviceService;
 import com.cxplan.projection.ui.component.BaseWebFrame;
+import com.cxplan.projection.ui.component.IconButton;
 import com.cxplan.projection.ui.component.monkey.MonkeyInputListener;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.ui.util.IconUtil;
@@ -27,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -80,6 +85,7 @@ public class DeviceImageFrame extends BaseWebFrame {
 
     private DeviceDisplayPanel clientScreen;
     private DefaultOverlayable screenComp;
+    private JPanel toolBarPanel;
     private JLabel tipLabel;
 
     private IApplication application;
@@ -164,6 +170,15 @@ public class DeviceImageFrame extends BaseWebFrame {
         instanceMap.remove(connection.getId());
     }
 
+    public void setToolBarVisible(boolean visible) {
+        if (visible == toolBarPanel.isVisible()) {
+            return;
+        }
+
+        toolBarPanel.setVisible(visible);
+        adaptFrameSize();
+    }
+
     public void setNavigationBarVisible(boolean visible) {
         if (visible) {
             clientScreen.showExtComponent();
@@ -238,6 +253,10 @@ public class DeviceImageFrame extends BaseWebFrame {
         JPanel mainContent = (JPanel)getContentPane();
         mainContent.setLayout(new BorderLayout());
 
+        //toolbar
+        toolBarPanel = createToolBar();
+        mainContent.add(toolBarPanel, BorderLayout.NORTH);
+
         clientScreen = new DeviceDisplayPanel(getGraphicsConfiguration(), monkeyInputListener);
         clientScreen.setBorder(BorderFactory.createEmptyBorder());
         clientScreen.setBackground(Color.gray);
@@ -274,6 +293,93 @@ public class DeviceImageFrame extends BaseWebFrame {
             checkImageSizeChanged(prefHeight, prefWidth);
         }
         clientScreen.getCanvas().setVisible(false);
+    }
+
+    private JPanel createToolBar() {
+        JPanel pane = new JPanel();
+        pane.setBorder(BorderFactory.createLineBorder(StyleConstants.borderColor, 1, true));
+        pane.setLayout(new JideBoxLayout(pane, JideBoxLayout.X_AXIS));
+
+        //setting button
+        IconButton settingBtn = new IconButton(IconUtil.getIcon("/image/device/setting.png"));
+        String tip = stringMgr.getString("toolbar.setting.tip");
+        settingBtn.setToolTipText(tip);
+        settingBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                DeviceSettingDialog settingDialog = new DeviceSettingDialog(DeviceImageFrame.this, connection);
+                GUIUtil.centerToOwnerWindow(settingDialog);
+                settingDialog.setVisible(true);
+            }
+        });
+        pane.add(settingBtn, JideBoxLayout.FIX);
+
+        //screenshot
+        IconButton screenshotBtn = new IconButton(IconUtil.getIcon("/image/device/screenshot.png"));
+        tip = stringMgr.getString("toolbar.screenshot.tip");
+        screenshotBtn.setToolTipText(tip);
+        screenshotBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Image image;
+                try {
+                    image = monkeyService.takeScreenshot(connection.getId(), 1.0f, 80);
+                } catch (MessageException ex) {
+                    logger.error(ex.getMessage(), ex);
+                    GUIUtil.showErrorMessageDialog(ex.getMessage());
+                    return;
+                }
+
+                File file = GUIUtil.saveFile(DeviceImageFrame.this, System.currentTimeMillis() + ".jpg");
+                if (file == null) {
+                    return;
+                }
+
+                try {
+                    ImageUtil.image2File(image, "JPG", file);
+                } catch (IOException ex) {
+                    logger.error(ex.getMessage(), ex);
+                    GUIUtil.showErrorMessageDialog(ex.getMessage());
+                    return;
+                }
+            }
+        });
+        pane.add(screenshotBtn, JideBoxLayout.FIX);
+
+        //volume up
+        IconButton volumeUpBtn = new IconButton(IconUtil.getIcon("/image/device/volume_up.png"));
+        tip = stringMgr.getString("toolbar.volumeup.tip");
+        volumeUpBtn.setToolTipText(tip);
+        volumeUpBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    monkeyService.press(connection.getId(), MonkeyConstant.KEYCODE_VOLUME_UP);
+                } catch (MessageException e1) {
+                    logger.error(e1.getMessage(), e1);
+                    GUIUtil.showErrorMessageDialog(e1.getMessage());
+                }
+            }
+        });
+        pane.add(volumeUpBtn, JideBoxLayout.FIX);
+        //volume down
+        IconButton volumeDownBtn = new IconButton(IconUtil.getIcon("/image/device/volume_down.png"));
+        tip = stringMgr.getString("toolbar.volumedown.tip");
+        volumeDownBtn.setToolTipText(tip);
+        volumeDownBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    monkeyService.press(connection.getId(), MonkeyConstant.KEYCODE_VOLUME_DOWN);
+                } catch (MessageException ex) {
+                    logger.error(ex.getMessage(), ex);
+                    GUIUtil.showErrorMessageDialog(ex.getMessage());
+                }
+            }
+        });
+        pane.add(volumeDownBtn, JideBoxLayout.FIX);
+
+        return pane;
     }
 
     private void installListener() {
@@ -392,22 +498,6 @@ public class DeviceImageFrame extends BaseWebFrame {
             imageThread.start();
         }
     }
-
-    /*private void takeScreenshot() {
-        Image image;
-        try {
-            image = monkeyService.takeScreenshot(connection.getId(), (float) connection.getZoomRate());
-        } catch (MessageException e) {
-            logger.error(e.getMessage(), e);
-            GUIUtil.showErrorMessageDialog(e.getMessage());
-            return;
-        }
-
-        if (imageQueue.size() == 0) {
-            showScreenResult();
-            imageQueue.offer(image);
-        }
-    }*/
 
     private JPanel createDeviceButtonPanel() {
         JPanel panel = new JPanel();

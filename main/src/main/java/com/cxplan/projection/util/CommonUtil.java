@@ -62,10 +62,10 @@ public class CommonUtil {
 
         int rotation = deviceMeta.getRotation();
         if (rotation % 2 == 1) {
+            return new Point((int) (deviceMeta.getScreenHeight() * zoomRate), (int) (deviceMeta.getScreenWidth() * zoomRate));
+        } else {
             return new Point((int)(deviceMeta.getScreenWidth() * zoomRate),
                     (int)( deviceMeta.getScreenHeight() * zoomRate));
-        } else {
-            return new Point((int) (deviceMeta.getScreenHeight() * zoomRate), (int) (deviceMeta.getScreenWidth() * zoomRate));
         }
     }
 
