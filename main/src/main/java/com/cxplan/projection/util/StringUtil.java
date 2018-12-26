@@ -27,12 +27,12 @@ public class StringUtil {
     }
 
     /**
-     * 从Json字符串转换为object，该方法不支持泛型.
-     * 如果有泛型支持需要，请使用api{@link #json2Object(String, TypeReference)}
+     * Convert string value in json format to business Object, this method doesn't support generic type,
+     * If you need generic type, use api {@link #json2Object(String, TypeReference)}
      *
-     * @param content json字符串
-     * @param type 对象类型
-     * @throws IllegalArgumentException 如果转换失败会抛出该异常。
+     * @param content json string in json format.
+     * @param type the class type of object.
+     * @throws IllegalArgumentException This type exception will be thrown if the format is illegal.
      */
     public static <T extends Object> T json2Object(String content, Class<T> type) {
         try {
@@ -42,11 +42,11 @@ public class StringUtil {
         }
     }
     /**
-     * 从Json字符串转换为object。
-     * 如果有对象类型支持泛型，可以使用该方法。
-     * @param content json字符串
-     * @param type 对象类型定义
-     * @throws IllegalArgumentException 如果转换失败会抛出该异常。
+     * Convert string value in json format to business Object, this method supports generic type.
+     *
+     * @param content json string in json format.
+     * @param type the type reference supported generic type.
+     * @throws IllegalArgumentException This type exception will be thrown if the format is illegal.
      */
     public static <T extends Object> T json2Object(String content, TypeReference type) {
         if (content == null) {
@@ -60,9 +60,7 @@ public class StringUtil {
     }
 
     /**
-     * 将业务对象转换为json字符串
-     * @param obj 需要被转换成json string的对象。
-     * @return json字符串
+     * Convert a object to a string value in json format.
      */
     public static String toJSONString(Object obj) {
         try{
@@ -72,12 +70,12 @@ public class StringUtil {
         }
     }
     /**
-     * 检查指定内容是否无内容：null 或者空的字符串。
-     * 注意空格也是算内容。
+     * Validate whether specified object is empty value.
+     * Return true if value is null or empty string value.
      */
     public static boolean isEmpty(Object str) {
         if (str instanceof String) {
-            return (str == null || ((String)str).length() == 0);
+            return ((String)str).length() == 0;
         } else {
             return str == null;
         }
