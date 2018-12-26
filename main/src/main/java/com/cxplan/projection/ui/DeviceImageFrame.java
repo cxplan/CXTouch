@@ -4,6 +4,8 @@ import com.alee.extended.window.ComponentMoveAdapter;
 import com.alee.global.StyleConstants;
 import com.cxplan.projection.IApplication;
 import com.cxplan.projection.MonkeyConstant;
+import com.cxplan.projection.core.adb.AdbUtil;
+import com.cxplan.projection.core.adb.RecordMeta;
 import com.cxplan.projection.core.connection.ConnectStatusListener;
 import com.cxplan.projection.core.connection.DeviceConnectionEvent;
 import com.cxplan.projection.core.connection.DeviceConnectionListener;
@@ -14,12 +16,15 @@ import com.cxplan.projection.i18n.StringManager;
 import com.cxplan.projection.i18n.StringManagerFactory;
 import com.cxplan.projection.net.message.MessageException;
 import com.cxplan.projection.service.IDeviceService;
+import com.cxplan.projection.ui.component.ADBPullFileMonitor;
 import com.cxplan.projection.ui.component.BaseWebFrame;
 import com.cxplan.projection.ui.component.IconButton;
+import com.cxplan.projection.ui.component.IconToggleButton;
 import com.cxplan.projection.ui.component.monkey.MonkeyInputListener;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.ui.util.IconUtil;
 import com.cxplan.projection.util.ImageUtil;
+import com.cxplan.projection.util.StringUtil;
 import com.jidesoft.swing.DefaultOverlayable;
 import com.jidesoft.swing.JideBoxLayout;
 import com.jidesoft.swing.JideButton;
@@ -333,6 +338,32 @@ public class DeviceImageFrame extends BaseWebFrame {
         });
         pane.add(settingBtn, JideBoxLayout.FIX);
 
+        final IconToggleButton recordBtn = new IconToggleButton(IconUtil.getIcon("/image/device/record.png"));
+        recordBtn.setSelected(false);
+        recordBtn.setSelectedIcon(IconUtil.getIcon("/image/device/recording.png"));
+        tip = stringMgr.getString("toolbar.record.tip");
+        recordBtn.setToolTipText(tip);
+        recordBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (recordBtn.isSelected()) {
+                    float zoomRate = Setting.getInstance().getFloatProperty(connection.getId(),
+                            SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE, SettingConstant.DEFAULT_ZOOM_RATE);
+                    try {
+                        application.getInfrastructureService().startRecord(connection.getId(), zoomRate);
+                    } catch (MessageException e1) {
+                        GUIUtil.showErrorMessageDialog(e1.getMessage());
+                        return;
+                    }
+                } else {
+                    stopRecord();
+                }
+
+                recordBtn.repaint();
+            }
+        });
+        pane.add(recordBtn, JideBoxLayout.FIX);
+
         //screenshot
         IconButton screenshotBtn = new IconButton(IconUtil.getIcon("/image/device/screenshot.png"));
         tip = stringMgr.getString("toolbar.screenshot.tip");
@@ -507,6 +538,43 @@ public class DeviceImageFrame extends BaseWebFrame {
         });
     }
 
+    private void stopRecord() {
+        final RecordMeta recordMeta;
+        try {
+            recordMeta = application.getInfrastructureService().stopRecord(connection.getId());
+        } catch (MessageException e1) {
+            GUIUtil.showErrorMessageDialog(e1.getMessage());
+            return;
+        }
+
+        String name = StringUtil.getFileName(recordMeta.getFile());
+        boolean needSelect = true;
+        File localFile = null;
+        while (needSelect) {
+            localFile = GUIUtil.saveFile(DeviceImageFrame.this, name);
+            if (localFile == null) {
+                String text = stringMgr.getString("record.abort.confirm");
+                if (GUIUtil.showConfirmDialog(DeviceImageFrame.this, text)) {
+                    return;//cancel saving
+                }
+            } else {
+                needSelect = false;
+            }
+        }
+        final String localPath = localFile.getAbsolutePath();
+        final ADBPullFileMonitor monitor = new ADBPullFileMonitor(this, 200);
+        monitor.setTotalWork((int) recordMeta.getSize());
+        GUIUtil.centerToOwnerWindow(monitor);
+        monitor.setVisible(true);
+        Runnable task = new Runnable() {
+            @Override
+            public void run() {
+                AdbUtil.pullFile(connection.getDevice(), recordMeta.getFile(), localPath, monitor);
+            }
+        };
+        application.getExecutors().submit(task);
+
+    }
 
     private void showScreenResult() {
         isFirstFrame = true;

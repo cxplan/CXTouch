@@ -177,6 +177,21 @@ public class AdbUtil {
         shell(cmd, device);
     }
 
+    /**
+     * Pulls a single file. A monitor can be specified to get progress in real time.
+     *
+     * @param remote the full path to the remote file
+     * @param local The local destination.
+     *
+     */
+    public static void pullFile(IDevice device, String remote, String local, SyncService.ISyncProgressMonitor monitor) {
+        try {
+            device.getSyncService().pullFile(remote, local, monitor );
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
 
     public static class LoggingOutputReceiver implements IShellOutputReceiver {
 

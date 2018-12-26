@@ -190,6 +190,23 @@ public class GUIUtil {
     }
 
     /**
+     * Will invoke the specified action later in EDT in case it is called from non-EDT thread.
+     * Otherwise action will be performed immediately.
+     *
+     * @param runnable runnable
+     */
+    public static void invokeLater ( final Runnable runnable ) {
+        if ( SwingUtilities.isEventDispatchThread () )
+        {
+            runnable.run ();
+        }
+        else
+        {
+            SwingUtilities.invokeLater ( runnable );
+        }
+    }
+
+    /**
      * Return the string content in clipboard
      */
     public static String getClipboardText() {

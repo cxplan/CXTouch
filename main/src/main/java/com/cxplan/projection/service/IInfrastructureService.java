@@ -1,6 +1,7 @@
 package com.cxplan.projection.service;
 
 import com.android.ddmlib.IDevice;
+import com.cxplan.projection.core.adb.RecordMeta;
 import com.cxplan.projection.net.message.MessageException;
 
 
@@ -59,5 +60,22 @@ public interface IInfrastructureService {
      * @param inProjection the flag whether the projection work is in progress.
      */
     void notifyProjectionFlag(String deviceId, boolean inProjection);
+
+    /**
+     * Start the task of recording device screen.
+     * A zooming rate can be specified to control
+     *
+     * @param deviceId the device ID.
+     * @param zoomRate the rate of zooming.
+     */
+    void startRecord(String deviceId, float zoomRate) throws MessageException;
+
+    /**
+     * Stop the task of recording screen, and return the path of remote video file in device.
+     *
+     * @param deviceId device ID.
+     * @return the path of remote video file in device.
+     */
+    RecordMeta stopRecord(String deviceId) throws MessageException;
 
 }

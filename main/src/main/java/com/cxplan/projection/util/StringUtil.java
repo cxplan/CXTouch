@@ -1,7 +1,3 @@
-/**
- * The code is written by ytx, and is confidential.
- * Anybody must not broadcast these files without authorization.
- */
 package com.cxplan.projection.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -447,6 +443,29 @@ public class StringUtil {
         return fileName;
     }
 
+    public static String getFileName(String path) {
+        if (isEmpty(path)) {
+            return null;
+        }
+
+        int index = -1;
+        for (int i = path.length() - 1; i > -1; i--) {
+            char ch = path.charAt(i);
+            if (ch == '\\' || ch == '/') {
+                index = i;
+                break;
+            }
+        }
+
+        if (index > -1 && index < (path.length() - 1)) {
+            return path.substring(index + 1);
+        } else if (index == (path.length() - 1)) {
+            return null;
+        } else {
+            return path;
+        }
+    }
+
     public static String replacePlaceHolder(String origVal, Map<String, String> data)
     {
         if (origVal == null) {
@@ -521,12 +540,9 @@ public class StringUtil {
     }
 
     public static void main(String[] args) {
-        String s = "a${12}b$${cd}a${dd}d${}";
-        Map<String, String> paramMap = new HashMap<>();
-        paramMap.put("cd", "1111");
-        paramMap.put("12", "33");
+        String s = "abc\\cc.a/";
 
-        System.out.println(replacePlaceHolder(s, paramMap));
+        System.out.println(getFileName(s));
 
     }
 }

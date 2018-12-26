@@ -6,6 +6,7 @@ import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.core.CXService;
 import com.cxplan.projection.core.DefaultDeviceConnection;
 import com.cxplan.projection.core.adb.AdbUtil;
+import com.cxplan.projection.core.adb.RecordMeta;
 import com.cxplan.projection.core.connection.ClientConnection;
 import com.cxplan.projection.core.connection.IDeviceConnection;
 import com.cxplan.projection.core.setting.Setting;
@@ -260,6 +261,40 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
         } catch (MessageException e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void startRecord(String deviceId, float zoomRate) throws MessageException {
+        final IDeviceConnection connection = application.getDeviceConnection(deviceId);
+        if (connection == null) {
+            throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
+        }
+
+        Message message = new Message(MessageUtil.CMD_DEVICE_IMAGE);
+        message.setParameter("type", (short)5);
+        message.setParameter("zr", zoomRate);
+
+        MessageUtil.request((ClientConnection) connection, message, 5000);
+    }
+
+    @Override
+    public RecordMeta stopRecord(String deviceId) throws MessageException {
+        final IDeviceConnection connection = application.getDeviceConnection(deviceId);
+        if (connection == null) {
+            throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
+        }
+
+        Message message = new Message(MessageUtil.CMD_DEVICE_IMAGE);
+        message.setParameter("type", (short)6);
+
+        Message ret = MessageUtil.request((ClientConnection) connection, message, 5000);
+        int status = ret.getParameter("ret");
+        if (status == 0) {
+            throw new MessageException(ret.getError());
+        }
+        String file = ret.getParameter("file");
+        long size = ret.getParameter("size");
+        return new RecordMeta(file, size);
     }
 
     private int checkMainProcess(IDevice device) {

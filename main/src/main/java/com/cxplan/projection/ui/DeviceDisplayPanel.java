@@ -46,6 +46,15 @@ public class DeviceDisplayPanel extends JPanel {
         return GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
     }
 
+    protected JComponent extComp;
+    protected Canvas canvas = null;
+    protected double displayScale = 1.0;
+    protected double zoomRate = 1.0;
+    protected double inverseGamma = 1.0;
+    private Color color = null;
+    private Image image = null;
+    private BufferedImage buffer = null;
+
     private boolean forceCanvasResize = false;
 
     public DeviceDisplayPanel(GraphicsConfiguration gc) {
@@ -94,9 +103,6 @@ public class DeviceDisplayPanel extends JPanel {
         });
     }
 
-//    public void init(final DisplayMode displayMode, final double gamma) {
-//        doInit(displayMode, gamma);
-//    }
     private void doInit(final GraphicsConfiguration gc, final DisplayMode displayMode, final double gamma, MonkeyInputListener inputListener) {
         GraphicsDevice gd = gc.getDevice();
         DisplayMode d = gd.getDisplayMode(), d2 = null;
@@ -154,7 +160,6 @@ public class DeviceDisplayPanel extends JPanel {
 
         canvas.setSize(1,1); // mac bug
 
-//        add(canvas, "0, 0, c, t");
         add(canvas, BorderLayout.CENTER);
         canvas.setVisible(true);
 
@@ -195,21 +200,11 @@ public class DeviceDisplayPanel extends JPanel {
         } catch (IllegalStateException e) { }
     }
 
-    protected JComponent extComp;
-    protected Canvas canvas = null;
-    protected double displayScale = 1.0;
-    protected double zoomRate = 1.0;
-    protected double inverseGamma = 1.0;
-    private Color color = null;
-    private Image image = null;
-    private BufferedImage buffer = null;
-
     public void setExtComponent(JComponent comp) {
         if (extComp != null) {
             remove(extComp);
         }
         extComp = comp;
-//        add(extComp, "0, 1, c, t");
         add(extComp, BorderLayout.SOUTH);
 
     }
