@@ -278,12 +278,6 @@ public class MainFrame extends BaseFrame {
      */
     private void showImageFrame(IDeviceConnection connection) {
 
-        /*if (!connection.isConnected()) {
-            String notPreparedText = stringMgr.getString("mainframe.device.not.prepared");
-            GUIUtil.showErrorMessageDialog(notPreparedText);
-            return;
-        }*/
-
         DeviceImageFrame clientFrame;
         try {
             clientFrame = DeviceImageFrame.getInstance(connection.getId(), application, true);
