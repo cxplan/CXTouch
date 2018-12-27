@@ -2,6 +2,9 @@ package com.cxplan.projection.ui;
 
 import com.alee.extended.window.ComponentMoveAdapter;
 import com.alee.global.StyleConstants;
+import com.alee.managers.notification.NotificationIcon;
+import com.alee.managers.notification.NotificationManager;
+import com.alee.managers.notification.WebNotificationPopup;
 import com.cxplan.projection.IApplication;
 import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.core.adb.AdbUtil;
@@ -23,6 +26,7 @@ import com.cxplan.projection.ui.component.IconToggleButton;
 import com.cxplan.projection.ui.component.monkey.MonkeyInputListener;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.ui.util.IconUtil;
+import com.cxplan.projection.util.CommonUtil;
 import com.cxplan.projection.util.ImageUtil;
 import com.cxplan.projection.util.StringUtil;
 import com.jidesoft.swing.DefaultOverlayable;
@@ -202,15 +206,12 @@ public class DeviceImageFrame extends BaseWebFrame {
                 public void run() {
                     String path = application.getInfrastructureService().getMainPackageInstallPath(connection.getId());
                     if (path == null) {
-                        String installTip = stringMgr.getString("status.main_process.install");
-                        showWaitingTip(installTip);
-                        try {
-                            application.getInfrastructureService().installMainProcess(connection.getDevice());
-                        } catch (Exception ex) {
-                            logger.error(ex.getMessage(), ex);
-                            String installFailText = stringMgr.getString("status.install.fail");
-                            GUIUtil.showErrorMessageDialog(installFailText + ": " + ex.getMessage());
-                            return;
+                        installMainPackage();
+                    } else {
+                        int versionCode = application.getInfrastructureService().getMainPackageVersion(connection.getId());
+                        if (versionCode != CommonUtil.SUPPORTED_VERSION) {
+                            logger.info("Supported version is {}, but current is {}", CommonUtil.SUPPORTED_VERSION, versionCode);
+                            installMainPackage();
                         }
                     }
                     showWaitingTip(stringMgr.getString("status.connecting"));
@@ -218,6 +219,19 @@ public class DeviceImageFrame extends BaseWebFrame {
                 }
             };
             application.getExecutors().submit(task);
+        }
+    }
+
+    private void installMainPackage() {
+        String installTip = stringMgr.getString("status.main_process.install");
+        showWaitingTip(installTip);
+        try {
+            application.getInfrastructureService().installMainProcess(connection.getDevice());
+        } catch (Exception ex) {
+            logger.error(ex.getMessage(), ex);
+            String installFailText = stringMgr.getString("status.install.fail");
+            GUIUtil.showErrorMessageDialog(installFailText + ": " + ex.getMessage());
+            return;
         }
     }
 
@@ -347,14 +361,7 @@ public class DeviceImageFrame extends BaseWebFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (recordBtn.isSelected()) {
-                    float zoomRate = Setting.getInstance().getFloatProperty(connection.getId(),
-                            SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE, SettingConstant.DEFAULT_ZOOM_RATE);
-                    try {
-                        application.getInfrastructureService().startRecord(connection.getId(), zoomRate);
-                    } catch (MessageException e1) {
-                        GUIUtil.showErrorMessageDialog(e1.getMessage());
-                        return;
-                    }
+                    startRecord();
                 } else {
                     stopRecord();
                 }
@@ -522,13 +529,6 @@ public class DeviceImageFrame extends BaseWebFrame {
             }
         };
 
-        addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-//                clientScreen.refreshImage();
-            }
-        });
-
         addWindowListener(new WindowAdapter() {
 
             @Override
@@ -536,6 +536,17 @@ public class DeviceImageFrame extends BaseWebFrame {
                 dispose();
             }
         });
+    }
+
+    private void startRecord() {
+        float zoomRate = Setting.getInstance().getFloatProperty(connection.getId(),
+                SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE, SettingConstant.DEFAULT_ZOOM_RATE);
+        try {
+            application.getInfrastructureService().startRecord(connection.getId(), zoomRate);
+        } catch (MessageException e1) {
+            GUIUtil.showErrorMessageDialog(e1.getMessage());
+            return;
+        }
     }
 
     private void stopRecord() {

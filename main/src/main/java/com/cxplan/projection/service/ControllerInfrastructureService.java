@@ -43,8 +43,18 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
         if (connection == null) {
             throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
         }
-        String mainPackagePath = AdbUtil.getPackagePath("com.cxplan.mediate", connection.getDevice());
+        String mainPackagePath = AdbUtil.getPackagePath(CommonUtil.PACKAGE_MAIN, connection.getDevice());
         return mainPackagePath;
+    }
+
+    @Override
+    public int getMainPackageVersion(String deviceId) {
+        DefaultDeviceConnection connection = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
+        if (connection == null) {
+            throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
+        }
+        int versionCode = AdbUtil.getPackageVersionCode(CommonUtil.PACKAGE_MAIN, connection.getDevice());
+        return versionCode;
     }
 
     @Override
@@ -298,7 +308,7 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
     }
 
     private int checkMainProcess(IDevice device) {
-        String cmd = AdbUtil.getPsCommand(device) + "|grep com.cxplan.projection.mediate";
+        String cmd = AdbUtil.getPsCommand(device) + "|grep " + CommonUtil.PROCESS_NAME_MAIN;
         String ret;
         try {
             ret = AdbUtil.shell(cmd, device);
@@ -310,18 +320,19 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
             return -1;
         }
         ret = ret.trim();
-        return CommonUtil.resolveProcessID(ret, "com.cxplan.projection.mediate");
+        return CommonUtil.resolveProcessID(ret, CommonUtil.PROCESS_NAME_MAIN);
     }
 
     private String buildMainCmd(IDevice device) {
         //app_process -Djava.class.path=/data/app/com.cxplan.mediate-1/base.apk
         ///data/local/tmp --nice-name=com.cxplan.projection.mediate com.cxplan.mediate.process.Main
-        String mainPackagePath = AdbUtil.getPackagePath("com.cxplan.mediate", device);
+        String mainPackagePath = AdbUtil.getPackagePath(CommonUtil.PACKAGE_MAIN, device);
         if (mainPackagePath == null) {//is not installed
             throw new RuntimeException("The main package is not installed: " + AdbUtil.getDeviceId(device));
         }
         StringBuilder sb = new StringBuilder("app_process -Djava.class.path=");
-        sb.append(mainPackagePath).append(" /data/local/tmp --nice-name=com.cxplan.projection.mediate com.cxplan.mediate.process.Main");
+        sb.append(mainPackagePath).append(" /data/local/tmp --nice-name=").
+                append(CommonUtil.PROCESS_NAME_MAIN).append(" com.cxplan.mediate.process.Main");
         return sb.toString();
     }
 

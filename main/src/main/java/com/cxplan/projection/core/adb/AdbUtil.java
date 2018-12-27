@@ -115,6 +115,47 @@ public class AdbUtil {
         return ret.substring(index + 1);
     }
 
+    /**
+     * Return the version code of specified package, -1 value will be returned
+     * if the package doesn't exist.
+     *
+     * @param packageName the package name.
+     * @param device device object.
+     * @return the version code of package.
+     */
+    public static int getPackageVersionCode(String packageName, IDevice device) {
+        String cmd = "dumpsys package " + packageName + "|grep versionCode";
+        String ret = shell(cmd, device);
+        if (StringUtil.isEmpty(ret)) {//the package doesn't exist.
+            return -1;
+        }
+        ret = ret.trim();
+        int index = ret.indexOf("=");
+        if (index == -1) {
+            throw new RuntimeException("The illegal package path format: " + ret);
+        }
+
+        int i = index + 1;
+        int endIndex = -1;
+        for (; i < ret.length(); i++) {
+            if (!Character.isDigit(ret.charAt(i))) {
+                endIndex = i;
+                break;
+            }
+        }
+
+        if (endIndex == -1) {
+            throw new RuntimeException("The illegal package path format: " + ret);
+        }
+
+        String string = ret.substring(index + 1, endIndex);
+        int code = StringUtil.getIntValue(string, -1);
+        if (code == -1) {
+            throw new RuntimeException("The illegal package path format: " + ret);
+        }
+        return code;
+    }
+
     public static String shell(String cmd, IDevice device) {
         // 5000 is the default timeout from the ddmlib.
         // This timeout arg is needed to the backwards compatibility.

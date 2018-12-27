@@ -18,6 +18,12 @@ public interface IInfrastructureService {
     String getMainPackageInstallPath(String deviceId);
 
     /**
+     * Return the versionCode of main application in specified device.
+     * @param deviceId the device ID.
+     * @return version code.
+     */
+    int getMainPackageVersion(String deviceId);
+    /**
      * Install main process application to specified device.
      *
      * @param device the device object.
