@@ -2,7 +2,7 @@
 
 ![main frame](screenshot/mainframe.jpg)
 
-Main frame
+Main Frame
 
 
 
