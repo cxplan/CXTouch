@@ -1,11 +1,6 @@
-/**
- * The code is written by ytx, and is confidential.
- * Anybody must not broadcast these files without authorization.
- */
 package com.cxplan.projection.service;
 
 import com.android.ddmlib.IDevice;
-import com.android.ddmlib.RawImage;
 import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.core.CXService;
 import com.cxplan.projection.core.DefaultDeviceConnection;
@@ -16,7 +11,6 @@ import com.cxplan.projection.net.message.MessageException;
 import com.cxplan.projection.net.message.MessageUtil;
 import com.cxplan.projection.util.CommonUtil;
 import com.cxplan.projection.util.ImageUtil;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +19,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 2018/6/9.
@@ -391,8 +384,11 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
     public void startActivity(String deviceId, String uri, String action, String data, String mimeType, Collection<String> categories, Map<String, Object> extras, String component, int flags) throws MessageException {
         List<String> intentArgs = buildIntentArgString(uri, action, data, mimeType, categories,
                 extras, component, flags);
-        shell(deviceId, Lists.asList("am", "start",
-                intentArgs.toArray(ZERO_LENGTH_STRING_ARRAY)).toArray(ZERO_LENGTH_STRING_ARRAY));
+        List<String> cmdList = new ArrayList<>(intentArgs.size() + 2);
+        cmdList.add("am");
+        cmdList.add("start");
+        cmdList.addAll(intentArgs);
+        shell(deviceId, cmdList.toArray(ZERO_LENGTH_STRING_ARRAY));
     }
 
     @Override
@@ -446,7 +442,7 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
     private List<String> buildIntentArgString(String uri, String action, String data, String mimetype,
                                               Collection<String> categories, Map<String, Object> extras, String component,
                                               int flags) {
-        List<String> parts = Lists.newArrayList();
+        List<String> parts = new ArrayList<>();
         // from adb docs:
         //<INTENT> specifications include these flags:
         //    [-a <ACTION>] [-d <DATA_URI>] [-t <MIME_TYPE>]

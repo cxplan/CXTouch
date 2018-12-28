@@ -84,14 +84,19 @@ public class Launcher {
         if (adbLocation != null) {
             adbLocation += File.separator + "platform-tools" + File.separator + "adb";
         } else {
-            adbLocation = "adb";
+            File builtADB = new File("resource/adb");
+            if (builtADB.isDirectory() && builtADB.exists()) {
+                adbLocation = "resource/adb/adb";
+            } else {
+                adbLocation = "adb";
+            }
         }
 
         AndroidDebugBridge.init(false);
         final AndroidDebugBridge adb = AndroidDebugBridge.createBridge(adbLocation, false);
         try {
-            logger.info("wait 1.2 seconds!");
-            Thread.sleep(1200);
+            logger.info("wait 1 seconds!");
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
         }
 

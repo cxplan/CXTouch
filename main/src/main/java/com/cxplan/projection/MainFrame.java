@@ -52,6 +52,7 @@ public class MainFrame extends BaseFrame {
 
     public MainFrame(IApplication application) {
         super("CXTouch");
+        setIconImage(IconUtil.getIcon("/image/logo.png").getImage());
         this.application = application;
 
         JPanel c = (JPanel) getContentPane();
@@ -66,6 +67,10 @@ public class MainFrame extends BaseFrame {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
+                String confirmText = stringMgr.getString("system.exit.confirm");
+                if (!GUIUtil.showConfirmDialog(MainFrame.this, confirmText)) {
+                    return;
+                }
                 dispose();
                 SystemUtil.exit();
             }

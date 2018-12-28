@@ -1,7 +1,3 @@
-/**
- * The code is written by ytx, and is confidential.
- * Anybody must not broadcast these files without authorization.
- */
 package com.cxplan.projection.core.connection;
 
 import com.cxplan.projection.net.message.JID;
