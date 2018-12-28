@@ -84,9 +84,9 @@ public class Launcher {
         if (adbLocation != null) {
             adbLocation += File.separator + "platform-tools" + File.separator + "adb";
         } else {
-            File builtADB = new File("resource/adb");
+            File builtADB = new File("res/adb");
             if (builtADB.isDirectory() && builtADB.exists()) {
-                adbLocation = "resource/adb/adb";
+                adbLocation = "res/adb/adb";
             } else {
                 adbLocation = "adb";
             }

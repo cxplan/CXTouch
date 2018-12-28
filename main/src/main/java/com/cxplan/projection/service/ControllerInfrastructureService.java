@@ -332,7 +332,7 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
         }
         StringBuilder sb = new StringBuilder("app_process -Djava.class.path=");
         sb.append(mainPackagePath).append(" /data/local/tmp --nice-name=").
-                append(CommonUtil.PROCESS_NAME_MAIN).append(" com.cxplan.mediate.process.Main");
+                append(CommonUtil.PROCESS_NAME_MAIN).append(" com.cxplan.projection.mediate.process.Main");
         return sb.toString();
     }
 

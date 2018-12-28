@@ -18,11 +18,11 @@ public class CommonUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(CommonUtil.class);
 
-    public static final String TOUCH_INPUTER = "com.cxplan.mediate/.inputer.CXTouchIME";
+    public static final String TOUCH_INPUTER = "com.cxplan.projection.mediate/.inputer.CXTouchIME";
     //The package name of main application.
-    public static final String PACKAGE_MAIN = "com.cxplan.mediate";
+    public static final String PACKAGE_MAIN = "com.cxplan.projection.mediate";
     //The process name of main application run on device.
-    public static final String PROCESS_NAME_MAIN = "com.cxplan.projection.mediate";
+    public static final String PROCESS_NAME_MAIN = "com.cxplan.touch.mediate";
     //The version code supported by current client.
     //Client will update main package if the version code of installed package doesn't match with this value.
     //The match rule is equals only.
