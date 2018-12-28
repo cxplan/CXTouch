@@ -6,7 +6,7 @@ You can use CXTouch for gaming, watching movie, explore app, working on mobile, 
 
 CXTouch support at least 4 devices running on a pc simultaneously, the supported amount of devices depends on your actual pc performance.
 
-
+![Show usage](doc/effect.gif)
 
 ## Features
 
@@ -40,12 +40,12 @@ CXTouch support at least 4 devices running on a pc simultaneously, the supported
 ## Latest Release
 
 - Window
-  - cxtouch-win-1_0.zip
-  - cxtouch-win-jre-1_0.zip
+  - [cxtouch-win-1_0.zip](https://github.com/cxplan/CXTouch/releases/download/1.0/CXTouch-win-1_0.zip)
+  - cxtouch-win-jre-1_0.zip (Waiting)
 - MacOS
-  - cxtouch-macos-1_0.zip
+  - cxtouch-macos-1_0.zip (Waiting)
 - Linux
-  - cxtouch-linux-1_0.zip
+  - cxtouch-linux-1_0.zip (Waiting)
 
 
 
@@ -56,7 +56,7 @@ The project is managed by maven, so you need to install [maven](http://maven.apa
 Go to the root path of project, and run command below: 
 
 ```shell
-mvn install
+mvn clean package -DskipTests=true
 ```
 
 Then a built package will be generated in the folder ${project root}/main/target/CXTouch-*.zip
