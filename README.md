@@ -23,7 +23,7 @@ CXTouch support at least 4 devices running on a pc simultaneously, the supported
 - Take a screenshot.
 - Record screen of device.
 - Setting for quality and size of  image  
-- Support two language: English and Chinese.
+- Support two languages: English and Chinese.
 
 
 
