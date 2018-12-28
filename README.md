@@ -37,6 +37,10 @@ CXTouch support at least 4 devices running on a pc simultaneously, the supported
 
 
 
+## screenshots
+
+[View](doc/screenshot.md)
+
 ## Latest Release
 
 - Window
