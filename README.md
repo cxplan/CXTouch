@@ -92,3 +92,10 @@ Mail:  liuxiaolin425@163.com
  of this license document, but changing it is not allowed.
 ```
 
+
+
+## Appreciating
+
+Thanks Install4j for supporting building cross-platform installer which make using software convenient.
+
+[![Install4j Web Site](https://www.ej-technologies.com/images/product_banners/install4j_small.png)](https://www.ej-technologies.com/products/install4j/overview.html)
