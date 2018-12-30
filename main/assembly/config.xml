@@ -48,9 +48,9 @@
             <directory>bin</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
-                <include>start.bat</include>
+                <include>start.*</include>
             </includes>
-            <filtered>false</filtered>
+            <filtered>true</filtered>
         </fileSet>
         <fileSet>
             <directory>bin/win</directory>
@@ -62,10 +62,10 @@
         </fileSet>
         <!-- res -->
         <fileSet>
-            <directory>assembly/adb/win</directory>
+            <directory>assembly/adb</directory>
             <outputDirectory>res/adb</outputDirectory>
             <includes>
-                <include>*</include>
+                <include>**/*</include>
             </includes>
             <filtered>false</filtered>
         </fileSet>
