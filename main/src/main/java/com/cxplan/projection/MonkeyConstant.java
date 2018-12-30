@@ -38,11 +38,17 @@ public class MonkeyConstant {
     /** Key code constant: Volume Down key.
      * Adjusts the speaker volume down. */
     public static final int KEYCODE_VOLUME_DOWN     = 25;
-
     public final static int KEYCODE_BACK = 4;
     public final static int KEYCODE_HOME = 3;
     public final static int KEYCODE_MENU = 82;
     public final static int KEYCODE_POWER = 26;
+    /** Key code constant: Brightness Down key.
+     * Adjusts the screen brightness down. */
+    public static final int KEYCODE_BRIGHTNESS_DOWN = 220;
+    /** Key code constant: Brightness Up key.
+     * Adjusts the screen brightness up. */
+    public static final int KEYCODE_BRIGHTNESS_UP   = 221;
+
 
     /**
      * Rotation constant: 0 degree rotation (natural orientation)

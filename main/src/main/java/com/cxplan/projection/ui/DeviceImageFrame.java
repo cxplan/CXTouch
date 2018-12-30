@@ -403,6 +403,8 @@ public class DeviceImageFrame extends BaseWebFrame {
         });
         pane.add(screenshotBtn, JideBoxLayout.FIX);
 
+        pane.add(Box.createHorizontalStrut(10), JideBoxLayout.FIX);
+
         //volume up
         IconButton volumeUpBtn = new IconButton(IconUtil.getIcon("/image/device/volume_up.png"));
         tip = stringMgr.getString("toolbar.volumeup.tip");
@@ -435,6 +437,41 @@ public class DeviceImageFrame extends BaseWebFrame {
             }
         });
         pane.add(volumeDownBtn, JideBoxLayout.FIX);
+
+        pane.add(Box.createHorizontalStrut(10), JideBoxLayout.FIX);
+
+        //brightness up
+        IconButton brightnessUpBtn = new IconButton(IconUtil.getIcon("/image/device/brightness_up.png"));
+        tip = stringMgr.getString("toolbar.brightness_up.tip");
+        brightnessUpBtn.setToolTipText(tip);
+        brightnessUpBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    monkeyService.press(connection.getId(), MonkeyConstant.KEYCODE_BRIGHTNESS_UP);
+                } catch (MessageException e1) {
+                    logger.error(e1.getMessage(), e1);
+                    GUIUtil.showErrorMessageDialog(e1.getMessage());
+                }
+            }
+        });
+        pane.add(brightnessUpBtn, JideBoxLayout.FIX);
+        //brightness down
+        IconButton brightnessDownBtn = new IconButton(IconUtil.getIcon("/image/device/brightness_down.png"));
+        tip = stringMgr.getString("toolbar.brightness_down.tip");
+        brightnessDownBtn.setToolTipText(tip);
+        brightnessDownBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    monkeyService.press(connection.getId(), MonkeyConstant.KEYCODE_BRIGHTNESS_DOWN);
+                } catch (MessageException ex) {
+                    logger.error(ex.getMessage(), ex);
+                    GUIUtil.showErrorMessageDialog(ex.getMessage());
+                }
+            }
+        });
+        pane.add(brightnessDownBtn, JideBoxLayout.FIX);
 
         return pane;
     }
