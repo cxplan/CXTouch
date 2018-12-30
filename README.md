@@ -1,6 +1,6 @@
 # CXTouch
 
-This is an open source software which control and manage android device from PC client. This software is written in Java, so it can run on Windows, Linux and MacOS where a jre is installed (support Java 6 and later). 
+This is an open source software which control and manage android device from PC client. This software is written in Java, so it can run on Windows, Linux and MacOS where a jre is installed (support Java 7 and later). 
 
 You can use CXTouch for gaming, watching movie, explore app, working on mobile, and all operation supported on device, but more convenient than doing them on device without root.
 
@@ -29,7 +29,7 @@ CXTouch support at least 4 devices running on a pc simultaneously, the supported
 
 ## Requirements
 
-- [Java](https://www.oracle.com/technetwork/java/javase/downloads/index.html) 6 and later.
+- [Java](https://www.oracle.com/technetwork/java/javase/downloads/index.html) 7 and later.
 - Make sure you enabled adb debugging on your device(s). 
 - A addtional option should be open on some devices such as xiaomi
   - USB debugging (Security settings)
@@ -43,14 +43,10 @@ CXTouch support at least 4 devices running on a pc simultaneously, the supported
 
 ## Latest Release
 
-- Window
-  - [cxtouch-win-1_0.zip](https://github.com/cxplan/CXTouch/releases/download/1.0/CXTouch-win-1_0.zip)
-  - cxtouch-win-jre-1_0.zip (Waiting)
-- MacOS
-  - cxtouch-macos-1_0.zip (Waiting)
-- Linux
-  - cxtouch-linux-1_0.zip (Waiting)
+The first version [1.0](https://github.com/cxplan/CXTouch/releases) is available.
 
+- The package or installer for each platform has two version(with jre and without jre) except Linux (JDK is a part of Linux normally)
+- The 32bit and 64bit version are supported on window os.
 
 
 ## Build
