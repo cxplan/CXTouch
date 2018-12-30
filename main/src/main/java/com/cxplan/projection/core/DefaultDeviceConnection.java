@@ -405,10 +405,11 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         }
         DefaultDeviceConnection cd = (DefaultDeviceConnection)application.getDeviceConnection(getId());
         if (cd == null) {
-            logger.error("设备未通过USB连接：id=" + getId());
+            String errorString = "The device is offline: " + getId();
+            logger.error(errorString);
             Message errorMsg = Message.createResultMessage(message);
             errorMsg.setParameter("errorType", 1);
-            errorMsg.setError("设备未通过USB连接：id=" + getId());
+            errorMsg.setError(errorString);
             sendMessage(errorMsg);
             return;
         }
