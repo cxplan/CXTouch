@@ -14,6 +14,7 @@ import com.cxplan.projection.core.setting.SettingConstant;
 import com.cxplan.projection.core.setting.SettingEvent;
 import com.cxplan.projection.ui.laf.CXLookAndFeel;
 import com.cxplan.projection.ui.util.GUIUtil;
+import com.cxplan.projection.util.CommonUtil;
 import com.cxplan.projection.util.SystemUtil;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
@@ -86,7 +87,8 @@ public class Launcher {
         } else {
             File builtADB = new File("res/adb");
             if (builtADB.isDirectory() && builtADB.exists()) {
-                adbLocation = "res/adb/adb";
+                String osDir = CommonUtil.getOsDir();
+                adbLocation = "res/adb/" + osDir + "/adb";
             } else {
                 adbLocation = "adb";
             }

@@ -60,6 +60,24 @@ public class CommonUtil {
         }
     }
 
+    /**
+     * Return the name of current os used for naming resource directory.
+     * This application is cross-platform, so the resources should
+     * be built as different version for certain OS, the name of directory must match with current OS.
+     *
+     */
+    public static String getOsDir() {
+        if (SystemUtil.isWindow()) {
+            return "win";
+        } else if (SystemUtil.isLinux()) {
+            return "linux";
+        } else if (SystemUtil.isMac()) {
+            return "macos";
+        } else {
+            throw new RuntimeException("Unknown OS");
+        }
+    }
+
     public static Point getDeviceDisplaySize(IDeviceMeta deviceMeta) {
         return getDeviceDisplaySize(deviceMeta, 1.0f);
     }
