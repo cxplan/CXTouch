@@ -508,6 +508,9 @@ public class DeviceImageFrame extends BaseWebFrame {
 
             @Override
             public void removed(DeviceConnectionEvent event) {
+                if (DeviceImageFrame.this.connection != event.getSource()) {
+                    return;
+                }
                 showWaitingTip("", DISCONNECT);
             }
 
