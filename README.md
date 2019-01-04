@@ -33,7 +33,7 @@ CXTouch support at least 4 devices running on a pc simultaneously, the supported
 - Make sure you enabled adb debugging on your device(s). 
 - A addtional option should be open on some devices such as xiaomi
   - USB debugging (Security settings)
-- A [ADB driver](https://adb.clockworkmod.com/) is need if your os is Windows.
+- A [ADB driver](https://adb.clockworkmod.com/) is needed if your os is Windows.
 
 
 
