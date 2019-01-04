@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>projection</artifactId>
+    <version>1.0</version>
 
     <name>projection</name>
 
@@ -161,7 +162,7 @@
                             <goal>single</goal><!-- run once only -->
                         </goals>
                         <configuration>
-                            <finalName>${project.name}</finalName>
+                            <finalName>CXTouch-${version}</finalName>
                             <descriptor>assembly/config.xml</descriptor>
                         </configuration>
                     </execution>
