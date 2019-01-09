@@ -42,10 +42,11 @@ public class CXLookAndFeel extends WebLookAndFeel {
     {
         try
         {
-            Locale systemLocale = Locale.getDefault();
+            CXLookAndFeel lookAndFeel = new CXLookAndFeel();
+            Locale systemLocale = lookAndFeel.systemLocale;
 
             // Installing LookAndFeel
-            UIManager.setLookAndFeel ( new CXLookAndFeel() );
+            UIManager.setLookAndFeel (lookAndFeel);
 
             //update locale
             updateLocale(systemLocale);
@@ -102,6 +103,12 @@ public class CXLookAndFeel extends WebLookAndFeel {
         }
     }
 
+    private Locale systemLocale;
+
+    public CXLookAndFeel() {
+        systemLocale = Locale.getDefault();
+    }
+
     @Override
     public void initialize() {
         WebButtonStyle.margin = new Insets(2, 8, 2, 8);
@@ -144,19 +151,35 @@ public class CXLookAndFeel extends WebLookAndFeel {
                 new SwingLazyValue( "javax.swing.plaf.BorderUIResource.LineBorderUIResource", new Object[]{ StyleConstants.focusColor } );
         table.put ( "List.focusCellHighlightBorder", listSelectedBorder );
 
-        //FileChooser top bar
-        table.put("FileChooser.lookInLabelText", "查找");
-        table.put("FileChooser.upFolderToolTipText", "向上一级");
-        table.put("FileChooser.homeFolderToolTipText", "桌面");
-        table.put("FileChooser.newFolderToolTipText", "新建文件夹");
-        table.put("FileChooser.listViewButtonToolTipText", "列表");
-        table.put("FileChooser.detailsViewButtonToolTipText", "详细信息");
-        //FileChooser menu
-        table.put("FileChooser.newFolderActionLabelText", "新建文件夹");
-        table.put("FileChooser.refreshActionLabelText", "刷新");
-        table.put("FileChooser.viewMenuLabelText", "视图");
-        table.put("FileChooser.listViewActionLabelText", "列表");
-        table.put("FileChooser.detailsViewActionLabelText", "详细信息");
-
+        String lang = systemLocale.getLanguage();
+        if (lang.equals("zh")) {
+            //FileChooser top bar
+            table.put("FileChooser.lookInLabelText", "查找");
+            table.put("FileChooser.upFolderToolTipText", "向上一级");
+            table.put("FileChooser.homeFolderToolTipText", "桌面");
+            table.put("FileChooser.newFolderToolTipText", "新建文件夹");
+            table.put("FileChooser.listViewButtonToolTipText", "列表");
+            table.put("FileChooser.detailsViewButtonToolTipText", "详细信息");
+            //FileChooser menu
+            table.put("FileChooser.newFolderActionLabelText", "新建文件夹");
+            table.put("FileChooser.refreshActionLabelText", "刷新");
+            table.put("FileChooser.viewMenuLabelText", "视图");
+            table.put("FileChooser.listViewActionLabelText", "列表");
+            table.put("FileChooser.detailsViewActionLabelText", "详细信息");
+        } else {
+            //default value.
+            table.put("FileChooser.lookInLabelText", "Find");
+            table.put("FileChooser.upFolderToolTipText", "Up Folder");
+            table.put("FileChooser.homeFolderToolTipText", "Home Folder");
+            table.put("FileChooser.newFolderToolTipText", "New Folder");
+            table.put("FileChooser.listViewButtonToolTipText", "List");
+            table.put("FileChooser.detailsViewButtonToolTipText", "Details");
+            //FileChooser menu
+            table.put("FileChooser.newFolderActionLabelText", "New Folder");
+            table.put("FileChooser.refreshActionLabelText", "Refresh");
+            table.put("FileChooser.viewMenuLabelText", "View");
+            table.put("FileChooser.listViewActionLabelText", "List");
+            table.put("FileChooser.detailsViewActionLabelText", "Details");
+        }
     }
 }
