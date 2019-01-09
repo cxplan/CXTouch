@@ -252,7 +252,7 @@ public class MainFrame extends BaseFrame {
         //version
         String versionLabel = stringMgr.getString("info.version.label");
         contactPane.add(new JLabel(versionLabel), "1,7");
-        contactPane.add(new JLabel("1.0"), "3,7");
+        contactPane.add(new JLabel("1.1"), "3,7");
 
         infoPane.add(contactPane, BorderLayout.SOUTH);
         return infoPane;
