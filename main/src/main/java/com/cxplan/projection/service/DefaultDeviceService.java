@@ -128,7 +128,7 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
     }
 
     @Override
-    public Image takeScreenshot(String deviceId, float zoomRate, int quality) {
+    public Image takeScreenshot(String deviceId, float zoomRate, int quality) throws MessageException {
         DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
         if (pm == null) {
             String error = "The device is offline: " + deviceId;
@@ -144,13 +144,7 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
         int realWidth = size.x;
         int realHeight = size.y;
 
-        Message retMsg;
-        try {
-            retMsg = request(pm, message);
-        } catch (MessageException e) {
-            logger.error(e.getMessage(), e);
-            return buildEmptyImage(realWidth, realHeight);
-        }
+        Message retMsg = request(pm, message);
 
         byte[] data = retMsg.getParameter("img");
         Image bufferedImage = ImageUtil.readImage(data);

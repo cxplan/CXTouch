@@ -25,8 +25,8 @@ public class DeviceReconnectionManager extends ReconnectionManager implements De
     }
 
     @Override
-    public void connectionClosedOnError(DeviceConnectionEvent event, Exception e) {
-        connectionClosed(event);
+    public void deviceChannelChanged(DeviceConnectionEvent event) {
+
     }
 
     @Override

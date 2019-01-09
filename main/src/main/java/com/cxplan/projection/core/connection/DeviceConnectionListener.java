@@ -42,12 +42,9 @@ public interface DeviceConnectionListener extends EventListener{
     void connectionClosed(DeviceConnectionEvent event);
 
     /**
-     * Notification that the connection was closed due to an exception. When
-     * abruptly disconnected it is possible for the connection to try reconnecting
-     * to the server.
-     *
-     * @param e the exception.
+     * Notification that the device channel is changed. Usb cable and Wireless are supported by adb,
+     * when the connection mode is changed, this method will be invoked.
      */
-    void connectionClosedOnError(DeviceConnectionEvent event, Exception e);
+    void deviceChannelChanged(DeviceConnectionEvent event);
 
 }

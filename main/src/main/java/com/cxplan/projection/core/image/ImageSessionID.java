@@ -9,7 +9,7 @@ import java.util.Objects;
 public class ImageSessionID {
 
     public static final int TYPE_NODE = 1;
-    public static final int TYPE_HUB = 2;
+    public static final int TYPE_CONTROLLER = 2;
 
     private int type;//The node type
     private String id;

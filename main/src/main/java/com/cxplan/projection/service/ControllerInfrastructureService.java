@@ -1,5 +1,6 @@
 package com.cxplan.projection.service;
 
+import com.android.ddmlib.CXAdbHelper;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.InstallException;
 import com.cxplan.projection.MonkeyConstant;
@@ -215,6 +216,9 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
         message.setParameter("type", (short)3);
         message.setParameter("iq", imageQuality);
         message.setParameter("zr", zoomRate);
+        if (connection.isWirelessMode()) {
+            message.setParameter("mode", (byte)1);//usb: empty or 0, wireless: 1.
+        }
 
         MessageUtil.request((ClientConnection) connection, message, 5000);
     }
@@ -305,6 +309,55 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
         String file = ret.getParameter("file");
         long size = ret.getParameter("size");
         return new RecordMeta(file, size);
+    }
+
+    @Override
+    public void startWirelessChannel(IDevice device) {
+        String deviceId = AdbUtil.getDeviceId(device);
+        final IDeviceConnection connection = application.getDeviceConnection(deviceId);
+        if (connection == null) {
+            throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
+        }
+
+        if (connection.isWirelessMode()) {
+            return;
+        }
+
+        String ip = AdbUtil.getDeviceIp(device);
+        if (!ip.equals(connection.getIp())) {
+            connection.updateIP(ip);
+        }
+        try {
+            CXAdbHelper.tcpip(5555, device);
+        } catch (Exception e) {
+            throw new RuntimeException("Executing tcpip failed: " + e.getMessage(), e);
+        }
+
+        try {
+            CXAdbHelper.connect(ip, 5555);
+        } catch (Exception e) {
+            throw new RuntimeException("Executing connect failed: " + e.getMessage(), e);
+        }
+
+    }
+
+    @Override
+    public void stopWirelessChannel(IDevice device) {
+        String deviceId = AdbUtil.getDeviceId(device);
+        final IDeviceConnection connection = application.getDeviceConnection(deviceId);
+        if (connection == null) {
+            throw new IllegalArgumentException("The device doesn't exist: " + deviceId);
+        }
+
+        if (!connection.isWirelessMode()) {
+            return;
+        }
+        try {
+            CXAdbHelper.disconnect(connection.getIp(), 5555);
+        } catch (Exception e) {
+            throw new RuntimeException("Executing disconnect failed: " + e.getMessage(), e);
+        }
+
     }
 
     private int checkMainProcess(IDevice device) {

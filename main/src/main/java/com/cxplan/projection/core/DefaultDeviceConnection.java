@@ -2,6 +2,8 @@ package com.cxplan.projection.core;
 
 import com.android.ddmlib.IDevice;
 import com.cxplan.projection.IApplication;
+import com.cxplan.projection.core.adb.AdbUtil;
+import com.cxplan.projection.core.adb.DeviceForward;
 import com.cxplan.projection.core.adb.ForwardManager;
 import com.cxplan.projection.core.connection.*;
 import com.cxplan.projection.core.image.ControllerImageSession;
@@ -38,9 +40,13 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDeviceConnection.class);
 
+    public static final String PROPERTY_DEVICE_CHANNEL = "device_channel";
+
     private IApplication application;
     private DeviceInfo deviceMeta;
     private IDevice device;
+    private IDevice usbDevice;
+    private IDevice wirelessDevice;
 
     private SocketChannel imageChannel;
     private ImageProcessThread imageThread;
@@ -54,24 +60,107 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         deviceMeta = new DeviceInfo();
         deviceMeta.setId(id);
         try {
-            deviceMeta.setManufacturer(device.getSystemProperty(IDevice.PROP_DEVICE_MANUFACTURER).get());
-            deviceMeta.setCpu(device.getSystemProperty(IDevice.PROP_DEVICE_CPU_ABI).get());
-            deviceMeta.setApiLevel(device.getSystemProperty(IDevice.PROP_BUILD_API_LEVEL).get());
-            deviceMeta.setDeviceModel(device.getSystemProperty(IDevice.PROP_DEVICE_MODEL).get());
+            deviceMeta.setManufacturer(device.getProperty(IDevice.PROP_DEVICE_MANUFACTURER));
+            deviceMeta.setCpu(device.getProperty(IDevice.PROP_DEVICE_CPU_ABI));
+            deviceMeta.setApiLevel(device.getProperty(IDevice.PROP_BUILD_API_LEVEL));
+            deviceMeta.setDeviceModel(device.getProperty(IDevice.PROP_DEVICE_MODEL));
         } catch (Exception ex) {
             logger.error(ex.getMessage(), ex);
         }
         this.device = device;
+        Application.getInstance().fireOnDeviceChannelChangedEvent(this);
+        boolean wirelessMode = AdbUtil.isWirelessDevice(device);
+        if (wirelessMode) {
+            setWirelessChannel(device);
+        } else {
+            setUsbChannel(device);
+        }
     }
 
     public IDevice getDevice() {
         return device;
     }
 
-    public void setDevice(IDevice device) {
-        this.device = device;
+    public boolean usingUsbDevice() {
+        return device == usbDevice;
     }
 
+    public boolean usingWirelessDevice() {
+        return device == wirelessDevice;
+    }
+
+    public void setUsbChannel(IDevice usbDevice) {
+        this.usbDevice = usbDevice;
+        logger.info("The usb channel is add: {}", usbDevice.getSerialNumber());
+    }
+
+    /**
+     * The wireless mode is first selected if available, the old message and image channel will be closed,
+     * and then a new connecting action using wireless device is invoked also.
+     *
+     */
+    public void setWirelessChannel(IDevice wirelessDevice) {
+        this.wirelessDevice = wirelessDevice;
+        logger.info("The wireless channel is add: {}", wirelessDevice.getSerialNumber());
+        refreshDeviceChannel(wirelessDevice);
+    }
+
+    /**
+     * Remove device channel, the message and image channel will be rebuilt if other device channels are available.
+     * Return a flag indicates whether there are some device channels available after removed.
+     *
+     * @return true: there are some device channels available, false: there is no device channel available.
+     */
+    public boolean removeDeviceChannel(IDevice device) {
+        boolean wirelessMode = AdbUtil.isWirelessDevice(device);
+        if (wirelessMode) {
+            logger.info("The wireless device channel is removed: {}", getId());
+            this.wirelessDevice = null;
+            if (usbDevice != null) {
+                refreshDeviceChannel(usbDevice);
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            logger.info("The usb device channel is removed: {}", getId());
+            this.usbDevice = null;
+            return wirelessDevice != null;
+        }
+
+    }
+
+    /**
+     * Specified new device channel, and rebuild connection on message and image.
+     *
+     * @param device new device channel.
+     */
+    private void refreshDeviceChannel(IDevice device) {
+        if (this.device == device) {
+            return;
+        }
+        logger.info("The channel mode will be changed to {}", device.getSerialNumber());
+        this.device = device;
+        //fire changed event
+        Application.getInstance().fireOnDeviceChannelChangedEvent(this);
+
+        if (device != null && isConnected()) {
+            try {
+                closeNetworkResource();
+                closeImageChannel();
+            } catch (Exception ex) {
+                logger.error(ex.getMessage(), ex);
+            }
+
+            //a new connecting action should be invoked.
+            try {
+                connect(false);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
+
+        }
+    }
 
     public int getMessageForwardPort() {
         return ForwardManager.getInstance().putMessageForward(getId());
@@ -94,6 +183,24 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
     @Override
     public IDeviceMeta getDeviceMeta() {
         return deviceMeta;
+    }
+
+    @Override
+    public boolean isWirelessMode() {
+        return wirelessDevice != null && device == wirelessDevice;
+    }
+
+    @Override
+    public void updateIP(String newIp) {
+        deviceMeta.setIp(newIp);
+    }
+
+    public boolean hasUsbChannel() {
+        return usbDevice != null;
+    }
+
+    public boolean hasWirelessChannel() {
+        return wirelessDevice != null;
     }
 
     @Override
@@ -263,7 +370,7 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         closeNetworkResource();
         IDeviceConnection connection = application.getDeviceConnection(getId());
         if (connection == this) {
-            Application.getInstance().removeDevice(getId());
+            Application.getInstance().removeDeviceConnection(getId());
         }
     }
 
@@ -303,6 +410,34 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         }
     }
 
+    public void removePortForward() {
+        removeMessagePortForward();
+        removeImagePortForward();
+    }
+
+    private void removeMessagePortForward() {
+        //remove message forward
+        try {
+            DeviceForward forward = ForwardManager.getInstance().removeMessageForward(getId());
+            if (forward != null) {
+                getDevice().removeForward(forward.getLocalPort(), forward.getRemotePort());
+            }
+        } catch (Exception e) {
+            logger.error("Removing message forward failed: " + e.getMessage(), e);
+        }
+    }
+    private void removeImagePortForward() {
+        //remove image forward
+        try {
+            DeviceForward forward = ForwardManager.getInstance().removeImageForward(getId());
+            if (forward != null) {
+                getDevice().removeForward(forward.getLocalPort(), forward.getRemoteSocketName(),
+                        IDevice.DeviceUnixSocketNamespace.ABSTRACT);
+            }
+        } catch (Exception e) {
+            logger.error("Removing image forward failed: " + e.getMessage(), e);
+        }
+    }
     /**
      * Connect to message service run in device, and initialize the context of connection.
      * If 'wait' is true value, the thread will be blocked util the initialization action is completed.
@@ -326,12 +461,29 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
 
             Thread.sleep(800);
 
-            int forwardPort = getMessageForwardPort();
-            //ensure the forward available.
-            device.createForward(forwardPort, ForwardManager.MESSAGE_REMOTE_PORT);
-            //connect to forward port.
+            String host;
+            int port;
+            if (usingWirelessDevice()) {
+                host = AdbUtil.getDeviceIp(getDevice());
+                port = ForwardManager.MESSAGE_REMOTE_PORT;
+                if (host == null) {
+                    throw new RuntimeException("The device must use wifi to connect network: + " + getId());
+                }
+                if (!host.equals(getIp())) {
+                    setIp(host);
+                }
+                logger.info("Use wireless channel to connect message service: {}", getId());
+            } else {//usb
+                host = "localhost";
+                port = getMessageForwardPort();
+                //ensure the forward available.
+                device.createForward(port, ForwardManager.MESSAGE_REMOTE_PORT);
+                logger.info("Use usb channel to connect message service: {}", getId());
+            }
+
+            //connect to message service.
             NioSocketConnector connector = Application.getInstance().getDeviceConnector();
-            ConnectFuture connFuture = connector.connect(new InetSocketAddress("localhost", forwardPort));
+            ConnectFuture connFuture = connector.connect(new InetSocketAddress(host, port));
             connFuture.awaitUninterruptibly();
 
             while (!connFuture.isDone() && !connFuture.isConnected()) {
@@ -342,7 +494,7 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             }
             if (!connFuture.isConnected()) {
                 connFuture.cancel();
-                String errorMsg = "Connecting to cxplan server is timeout: forward port=" + forwardPort;
+                String errorMsg = "Connecting to cxplan server is timeout: host:" + host + ", port=" + port;
                 logger.error(errorMsg);
                 throw new RuntimeException(errorMsg);
             }
@@ -351,9 +503,9 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             if (messageSession.isConnected()) {
                 messageSession.setAttribute(DeviceIoHandlerAdapter.CLIENT_SESSION, this);
                 messageSession.setAttribute(DeviceIoHandlerAdapter.CLIENT_ID, getJId());
-                logger.info("Connect to device({}) on port({}) successfully!", getId(), forwardPort);
+                logger.info("Connect to device({}) on port({}) successfully!", getId(), port);
             } else {
-                logger.error("Connecting to device({}) on port({}) failed", getId(), forwardPort);
+                logger.error("Connecting to device({}) on port({}) failed", getId(), port);
                 return;
             }
 
@@ -440,7 +592,7 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         if (!isImageChannelAvailable()) {
             return;
         }
-        ImageSessionManager.getInstance().removeImageSession(getId(), new ImageSessionID(ImageSessionID.TYPE_HUB, getId()));
+        ImageSessionManager.getInstance().removeImageSession(getId(), new ImageSessionID(ImageSessionID.TYPE_CONTROLLER, getId()));
 
         if (imageChannel != null && imageChannel.isConnected()) {
             try {
@@ -483,11 +635,20 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             }
             //start minicap service
             infrastructureService.startMinicapService(getId());
-            device.createForward(getImageForwardPort(), ForwardManager.IMAGE_REMOTE_SOCKET_NAME,
-                    IDevice.DeviceUnixSocketNamespace.ABSTRACT);
+
+            String host;
+            int port;
+            if (usingWirelessDevice()) {
+                host = getIp();
+                port = ForwardManager.IMAGE_REMOTE_PORT;
+            } else {//usb mode
+                host = "localhost";
+                port = getImageForwardPort();
+                device.createForward(port, ForwardManager.IMAGE_REMOTE_SOCKET_NAME,
+                        IDevice.DeviceUnixSocketNamespace.ABSTRACT);
+            }
 
             //set up ADB inputer as default input method.
-            //TODO is necessary, a restore action is needed also.
             checkInputerInstallation();
 
             if (imageChannel != null) {
@@ -498,8 +659,8 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
             }
 
             SocketChannel imageSocketChannel = SocketChannel.open();
-            SocketAddress sa = new InetSocketAddress("localhost", getImageForwardPort());
-            logger.info("connecting to image server[localhost:{}]", getImageForwardPort());
+            SocketAddress sa = new InetSocketAddress(host, port);
+            logger.info("connecting to image server[{}:{}]", host,port);
             imageSocketChannel.connect(sa);
 
             setImageChannel(imageSocketChannel);

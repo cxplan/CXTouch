@@ -25,7 +25,7 @@ public class ControllerImageSession extends AbstractImageSession {
     private PipedOutputStream outputStream;
 
     public ControllerImageSession(String deviceId) {
-        super(new ImageSessionID(ImageSessionID.TYPE_HUB, deviceId));
+        super(new ImageSessionID(ImageSessionID.TYPE_CONTROLLER, deviceId));
         deviceConnection = Application.getInstance().getDeviceConnection(deviceId);
         if (deviceConnection == null) {
             throw new RuntimeException("The device connection doesn't exist: " + deviceId);

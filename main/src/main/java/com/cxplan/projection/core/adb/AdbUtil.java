@@ -7,7 +7,10 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Kenny
@@ -25,6 +28,13 @@ public class AdbUtil {
         String value = device.getProperty("ro.ytx.imei");
         if (value == null) {
             value = device.getProperty("ro.serialno");
+            if (value == null) {
+                try {
+                    value = device.getSystemProperty("ro.serialno").get();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
         return value == null ? device.getSerialNumber() : value;
     }
@@ -205,7 +215,7 @@ public class AdbUtil {
     }
 
     /**
-     * Kill specified process.
+     * Kill specified process run on device.
      *
      * @param pid the id of process.
      * @param device device object.
@@ -233,6 +243,42 @@ public class AdbUtil {
         }
     }
 
+    /**
+     * Return whether specified device is connected with pc by wireless network.
+     * @param device the device object.
+     * @return true: wireless, false: usb cable.
+     */
+    public static boolean isWirelessDevice(IDevice device) {
+        String featureName = device.getSerialNumber();
+        if (featureName != null && featureName.endsWith(":5555")) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private static Pattern ipPattern = Pattern.compile("inet addr:(.*?) ");
+
+    /**
+     * Retrieve the ip address of device by adb shell.
+     * @param device device channel.
+     * @return the ip address of device, a null value will be returned if device doesn't use wifi network.
+     */
+    public static String getDeviceIp(IDevice device) {
+        String cmd = "ifconfig wlan0";
+        String ret = shell(cmd, device);
+        if (StringUtil.isEmpty(ret)) {//the package doesn't exist.
+            return null;
+        }
+
+        Matcher matcher = ipPattern.matcher(ret);
+        if (matcher.find()) {
+            String ip = matcher.group(1);
+            return ip;
+        } else {
+            return null;
+        }
+    }
 
     public static class LoggingOutputReceiver implements IShellOutputReceiver {
 

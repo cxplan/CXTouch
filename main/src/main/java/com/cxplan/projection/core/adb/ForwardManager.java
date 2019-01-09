@@ -10,6 +10,7 @@ public class ForwardManager {
 
     public static final int MESSAGE_PORT_START = 20000;
     public static final int MESSAGE_REMOTE_PORT = 2014;
+    public static final int IMAGE_REMOTE_PORT = 2015;
     public static final int IMAGE_PORT_START = 30000;
     public static final int MONKEY_PORT_START = 40000;
     public static final int MONKEY_REMOTE_PORT = 12345;

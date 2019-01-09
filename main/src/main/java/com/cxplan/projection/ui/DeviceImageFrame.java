@@ -2,9 +2,6 @@ package com.cxplan.projection.ui;
 
 import com.alee.extended.window.ComponentMoveAdapter;
 import com.alee.global.StyleConstants;
-import com.alee.managers.notification.NotificationIcon;
-import com.alee.managers.notification.NotificationManager;
-import com.alee.managers.notification.WebNotificationPopup;
 import com.cxplan.projection.IApplication;
 import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.core.adb.AdbUtil;
@@ -95,6 +92,7 @@ public class DeviceImageFrame extends BaseWebFrame {
     private DefaultOverlayable screenComp;
     private JPanel toolBarPanel;
     private JLabel tipLabel;
+    private IconToggleButton wirelessBtn;
 
     private IApplication application;
     private IDeviceConnection connection;
@@ -352,6 +350,24 @@ public class DeviceImageFrame extends BaseWebFrame {
         });
         pane.add(settingBtn, JideBoxLayout.FIX);
 
+        //wireless
+        wirelessBtn = new IconToggleButton(IconUtil.getIcon("/image/device/wifi_no_selected.png"));
+        wirelessBtn.setSelectedIcon(IconUtil.getIcon("/image/device/wifi_selected.png"));
+        wirelessBtn.setSelected(connection.isWirelessMode());
+        tip = stringMgr.getString("toolbar.wireless.tip");
+        wirelessBtn.setToolTipText(tip);
+        wirelessBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (wirelessBtn.isSelected()) {
+                    application.getInfrastructureService().startWirelessChannel(connection.getDevice());
+                } else {
+                    application.getInfrastructureService().stopWirelessChannel(connection.getDevice());
+                }
+            }
+        });
+        pane.add(wirelessBtn, JideBoxLayout.FIX);
+
         final IconToggleButton recordBtn = new IconToggleButton(IconUtil.getIcon("/image/device/record.png"));
         recordBtn.setSelected(false);
         recordBtn.setSelectedIcon(IconUtil.getIcon("/image/device/recording.png"));
@@ -504,6 +520,8 @@ public class DeviceImageFrame extends BaseWebFrame {
                 if (event.getType() != DeviceConnectionEvent.ConnectionType.NETWORK) {
                     showWaitingTip("", DISCONNECT);
                 }
+                //update the status of  wireless button.
+                wirelessBtn.setSelected(connection.isWirelessMode());
             }
 
             @Override
@@ -520,6 +538,9 @@ public class DeviceImageFrame extends BaseWebFrame {
                     return;
                 }
 
+                //update the status of  wireless button.
+                wirelessBtn.setSelected(connection.isWirelessMode());
+
                 if (event.getType() == DeviceConnectionEvent.ConnectionType.MESSAGE) {
                     openImageChannel();
                 } else if (event.getType() == DeviceConnectionEvent.ConnectionType.IMAGE) {
@@ -534,8 +555,10 @@ public class DeviceImageFrame extends BaseWebFrame {
             }
 
             @Override
-            public void connectionClosedOnError(DeviceConnectionEvent event, Exception e) {
-                disconnect(event);
+            public void deviceChannelChanged(DeviceConnectionEvent event) {
+                if (checkConnection(event)) {
+                    wirelessBtn.setSelected(connection.isWirelessMode());
+                }
             }
 
             private void disconnect(DeviceConnectionEvent event) {

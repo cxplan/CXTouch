@@ -6,6 +6,7 @@ import com.cxplan.projection.net.message.Message;
 import com.cxplan.projection.net.message.MessageException;
 import org.apache.mina.core.session.IoSession;
 
+import java.beans.PropertyChangeListener;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -86,4 +87,16 @@ public interface IDeviceConnection extends IDeviceMeta {
      * Return the meta object of device
      */
     IDeviceMeta getDeviceMeta();
+
+    /**
+     * Return whether current device channel is wireless.
+     */
+    boolean isWirelessMode();
+
+    /**
+     * Update the ip of device.
+     * @param newIp new ip address.
+     */
+    void updateIP(String newIp);
+
 }

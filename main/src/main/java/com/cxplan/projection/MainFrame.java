@@ -18,6 +18,7 @@ import com.cxplan.projection.ui.DeviceImageFrame;
 import com.cxplan.projection.ui.DeviceSettingDialog;
 import com.cxplan.projection.ui.component.BaseFrame;
 import com.cxplan.projection.ui.component.IconButton;
+import com.cxplan.projection.ui.component.IconToggleButton;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.ui.util.IconUtil;
 import com.cxplan.projection.util.SystemUtil;
@@ -195,10 +196,10 @@ public class MainFrame extends BaseFrame {
         double gap = 4;
         double[][] size = new double[][]{{gap, p, 10, TableLayout.FILL},
                 {
-                    20, p,
-                    gap, p,
-                    gap, p,
-                    gap, p
+                        20, p,
+                        gap, p,
+                        gap, p,
+                        gap, p
                 }};
         contactPane.setLayout(new TableLayout(size));
         //project site
@@ -358,6 +359,15 @@ public class MainFrame extends BaseFrame {
             }
         }
     }
+    private void updateDeviceChannel(String deviceId) {
+        int count = deviceListPane.getComponentCount();
+        for (int i = 0; i < count; i++) {
+            DeviceComponent dc = (DeviceComponent)deviceListPane.getComponent(i);
+            if (dc.connection.getId().equals(deviceId)) {
+                dc.updateWirelessStatus();
+            }
+        }
+    }
 
     private static final Border DEVICE_BORDER_NONE = BorderFactory.createEmptyBorder(2, 5, 2, 2);
     private static final Border DEVICE_BORDER_SEPARATOR = BorderFactory.createCompoundBorder(
@@ -372,6 +382,7 @@ public class MainFrame extends BaseFrame {
         private IDeviceConnection connection;
         private JLabel deviceNameLabel;
         private JLabel serialLabel;
+        private IconToggleButton wirelessBtn;
 
         public DeviceComponent(final IDeviceConnection connection) {
             this.connection = connection;
@@ -410,6 +421,26 @@ public class MainFrame extends BaseFrame {
                 }
             });
             buttonPanel.add(viewBtn);
+
+            //wireless button
+            wirelessBtn = new IconToggleButton(IconUtil.getIcon("/image/device/wifi_no_selected.png"));
+            wirelessBtn.setSelectedIcon(IconUtil.getIcon("/image/device/wifi_selected.png"));
+            wirelessBtn.setSelected(connection.isWirelessMode());
+            String wirelessTip = stringMgr.getString("wireless.button.tip");
+            wirelessBtn.setToolTipText(wirelessTip);
+            wirelessBtn.addMouseListener(deviceItemMouseListener);
+            wirelessBtn.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (wirelessBtn.isSelected()) {
+                        application.getInfrastructureService().startWirelessChannel(connection.getDevice());
+                    } else {
+                        application.getInfrastructureService().stopWirelessChannel(connection.getDevice());
+                    }
+                }
+            });
+            buttonPanel.add(wirelessBtn);
+
             //setting button.
             IconButton settingBtn = new IconButton(IconUtil.getIcon("/image/setting.png"));
             settingBtn.addMouseListener(deviceItemMouseListener);
@@ -444,6 +475,10 @@ public class MainFrame extends BaseFrame {
                 setBorder(DEVICE_BORDER_NONE);
             }
         }
+
+        public void updateWirelessStatus() {
+            wirelessBtn.setSelected(connection.isWirelessMode());
+        }
     }
 
     private class DeviceItemMouseListener extends MouseAdapter {
@@ -472,7 +507,7 @@ public class MainFrame extends BaseFrame {
             if (e.getButton() != MouseEvent.BUTTON1 || e.getClickCount() != 1) {
                 return;
             }
-            if(e.getSource() instanceof JButton) {
+            if(e.getSource() instanceof AbstractButton) {
                 return;
             }
             JComponent component = (JComponent)e.getSource();
@@ -491,6 +526,18 @@ public class MainFrame extends BaseFrame {
                 @Override
                 public void run() {
                     addDevice(event.getSource());
+                    DeviceImageFrame instance = DeviceImageFrame.getInstance(event.getSource().getId(),
+                            application, false);
+                    if (instance == null) {
+                        return;
+                    }
+                    Runnable task = new Runnable() {
+                        @Override
+                        public void run() {
+                            event.getSource().connect();
+                        }
+                    };
+                    application.getExecutors().submit(task);
                 }
             });
         }
@@ -537,6 +584,12 @@ public class MainFrame extends BaseFrame {
                 IInfrastructureService infrastructureService = application.getInfrastructureService();
                 infrastructureService.notifyProjectionFlag(event.getSource().getId(), false);
             }
+        }
+
+        @Override
+        public void deviceChannelChanged(DeviceConnectionEvent event) {
+            super.deviceChannelChanged(event);
+            updateDeviceChannel(event.getSource().getId());
         }
     }
 

@@ -132,9 +132,7 @@ public class Launcher {
             }
 
             public void deviceDisconnected(IDevice device) {
-                String deviceId = AdbUtil.getDeviceId(device);
-                logger.info("The device (serial=" + deviceId + ") is removed");
-                Application.getInstance().removeDevice(deviceId);
+                Application.getInstance().removeDevice(device);
             }
 
             public void deviceChanged(IDevice device, int changeMask) {
@@ -157,12 +155,12 @@ public class Launcher {
             }
 
             if (event.getPropertyName().equals(SettingConstant.KEY_DEVICE_NAME)) {
-               IDeviceConnection connection =  Application.getInstance().getDeviceConnection( event.getSource());
-               if (connection == null) {
-                   return;
-               }
+                IDeviceConnection connection =  Application.getInstance().getDeviceConnection( event.getSource());
+                if (connection == null) {
+                    return;
+                }
 
-               connection.setDeviceName((String) event.getNewValue());
+                connection.setDeviceName((String) event.getNewValue());
             } else if (event.getPropertyName().equals(SettingConstant.KEY_DEVICE_IMAGE_ZOOM_RATE)) {
                 IDeviceConnection connection =  Application.getInstance().getDeviceConnection( event.getSource());
                 if (connection == null) {

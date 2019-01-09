@@ -31,7 +31,8 @@ public class DeviceConnectionAdapter implements DeviceConnectionListener {
     }
 
     @Override
-    public void connectionClosedOnError(DeviceConnectionEvent event, Exception e) {
+    public void deviceChannelChanged(DeviceConnectionEvent event) {
 
     }
+
 }

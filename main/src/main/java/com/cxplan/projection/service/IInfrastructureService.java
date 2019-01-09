@@ -84,4 +84,16 @@ public interface IInfrastructureService {
      */
     RecordMeta stopRecord(String deviceId) throws MessageException;
 
+    /**
+     * Start wireless channel for device.
+     * The usb cable will be not needed in Wireless mode, but the communication speed may be slower
+     *
+     */
+    void startWirelessChannel(IDevice device);
+
+    /**
+     * Remove wireless channel
+     */
+    void stopWirelessChannel(IDevice device);
+
 }

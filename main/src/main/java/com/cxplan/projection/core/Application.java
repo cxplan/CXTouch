@@ -3,6 +3,7 @@ package com.cxplan.projection.core;
 import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
 import com.cxplan.projection.IApplication;
+import com.cxplan.projection.MainFrame;
 import com.cxplan.projection.core.adb.AdbUtil;
 import com.cxplan.projection.core.adb.DeviceForward;
 import com.cxplan.projection.core.adb.ForwardManager;
@@ -11,11 +12,14 @@ import com.cxplan.projection.core.connection.DeviceConnectionListener;
 import com.cxplan.projection.core.connection.DeviceReconnectionManager;
 import com.cxplan.projection.core.connection.IDeviceConnection;
 import com.cxplan.projection.core.setting.Setting;
+import com.cxplan.projection.i18n.StringManager;
+import com.cxplan.projection.i18n.StringManagerFactory;
 import com.cxplan.projection.model.DeviceInfo;
 import com.cxplan.projection.net.DSCodecFactory;
 import com.cxplan.projection.net.DeviceIoHandlerAdapter;
 import com.cxplan.projection.service.IDeviceService;
 import com.cxplan.projection.service.IInfrastructureService;
+import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.util.StringUtil;
 import com.cxplan.projection.util.SystemUtil;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
@@ -37,6 +41,8 @@ import java.util.concurrent.*;
  */
 public class Application implements IApplication {
     private static final Logger logger = LoggerFactory.getLogger(Application.class);
+    private static final StringManager stringMgr =
+            StringManagerFactory.getStringManager(Application.class);
 
     private static Application instance;
 
@@ -56,9 +62,17 @@ public class Application implements IApplication {
         Application.getInstance();//Assure that the instance of context is created.
         List<Future> futureList = new ArrayList<>(devices.length);
         for (IDevice device : devices) {
-            Future future = instance.doAddDevice(device, false);
-            if (future != null) {
-                futureList.add(future);
+            try {
+                Future future = instance.doAddDevice(device, false);
+                if (future != null) {
+                    futureList.add(future);
+                }
+            } catch (Exception ex) {
+                logger.error("Loading device(" + device.getSerialNumber() + ") failed: " + ex.getMessage(), ex);
+                if (AdbUtil.isWirelessDevice(device)) {
+                    String wirelessWeak = stringMgr.getString("wireless.signal.weak") + device.getSerialNumber();
+                    GUIUtil.showErrorMessageDialog(wirelessWeak);
+                }
             }
         }
 
@@ -80,8 +94,16 @@ public class Application implements IApplication {
         }
     }
 
-    public void addDevice(IDevice device) {
-        doAddDevice(device, true);
+    public synchronized void addDevice(IDevice device) {
+        try {
+            doAddDevice(device, true);
+        } catch (Exception ex) {
+            logger.error("Loading device(" + device.getSerialNumber() + ") failed: " + ex.getMessage(), ex);
+            if (AdbUtil.isWirelessDevice(device)) {
+                String wirelessWeak = stringMgr.getString("wireless.signal.weak") + device.getSerialNumber();
+                GUIUtil.showErrorMessageDialog(wirelessWeak);
+            }
+        }
     }
 
     /**
@@ -124,24 +146,38 @@ public class Application implements IApplication {
      * @param notifyController flag determinate whether the device adding action should be notified controller.
      * @return Future object which control the execution thread.
      */
-    private Future<?> doAddDevice(final IDevice device, final boolean notifyController) {
+    private Future<?> doAddDevice(final IDevice device, final boolean notifyController) throws RuntimeException {
         final String id = AdbUtil.getDeviceId(device);
-        if (deviceMap.containsKey(id)) {
+        final boolean existed = deviceMap.containsKey(id);
+
+        DefaultDeviceConnection deviceConnection = deviceMap.get(id);
+        if (deviceConnection != null) {
+            boolean wirelessMode = AdbUtil.isWirelessDevice(device);
+            if (wirelessMode) {
+                deviceConnection.setWirelessChannel(device);
+            } else {
+                deviceConnection.setUsbChannel(device);
+            }
+        } else {
+            deviceConnection = new DefaultDeviceConnection(id, device, this);
+            String ip = AdbUtil.getDeviceIp(device);
+            deviceConnection.setIp(ip);
+            deviceMap.put(id, deviceConnection);
+        }
+        if (existed) {
             return null;
         }
+//
+        final DefaultDeviceConnection connection = deviceConnection;
 
         Runnable task = new Runnable() {
             @Override
             public void run() {
                 logger.info("The device (serial=" + id + ") is online");
 
-                DefaultDeviceConnection deviceConnection;
                 try {
-                    deviceConnection = new DefaultDeviceConnection(id, device, Application.this);
-                    deviceMap.put(id, deviceConnection);
-
                     if (notifyController) {
-                        fireOnDeviceCreatedEvent(deviceConnection);
+                        fireOnDeviceCreatedEvent(connection);
                     }
                 } catch (Exception e) {
                     logger.error("initializing device(" + id + ") failed: " + e.getMessage(), e);
@@ -150,7 +186,7 @@ public class Application implements IApplication {
 
                 //load setting
                 Setting.getInstance().loadDeviceSetting(id);
-                SystemUtil.installConfig(deviceConnection);
+                SystemUtil.installConfig(connection);
 
                 //clean environment( kill old image service process )
                 int pid = getInfrastructureService().getMinicapProcessID(id);
@@ -166,10 +202,10 @@ public class Application implements IApplication {
                 }
 
                 //check screen size
-                if (deviceConnection.getScreenWidth() < 1
-                        || deviceConnection.getScreenHeight() < 1) {
+                if (connection.getScreenWidth() < 1
+                        || connection.getScreenHeight() < 1) {
                     Dimension dim = AdbUtil.getPhysicalSize(device);
-                    DeviceInfo di = (DeviceInfo) deviceConnection.getDeviceMeta();
+                    DeviceInfo di = (DeviceInfo) connection.getDeviceMeta();
                     di.setScreenWidth(dim.width);
                     di.setScreenHeight(dim.height);
                 }
@@ -189,8 +225,24 @@ public class Application implements IApplication {
         return deviceThreadPool.submit(task);
     }
 
-    public void removeDevice(String id) {
+    public synchronized void removeDevice(IDevice device) {
+        String id = AdbUtil.getDeviceId(device);
+        DefaultDeviceConnection pm = deviceMap.get(id);
+        if (pm == null) {
+            return;
+        }
+
+        if (!pm.removeDeviceChannel(device)) {
+            logger.info("there is no channel, the connection will be removed: {}", id);
+            removeDeviceConnection(id);
+        }
+
+    }
+    public synchronized void removeDeviceConnection(String id) {
         DefaultDeviceConnection pm = deviceMap.remove(id);
+        if (pm == null) {
+            return;
+        }
         logger.info("The device (serial=" + id + ") is removed");
 
         try {
@@ -199,25 +251,7 @@ public class Application implements IApplication {
             logger.error(ex.getMessage(), ex);
         }
 
-        //remove message forward
-        try {
-            DeviceForward forward = ForwardManager.getInstance().removeMessageForward(id);
-            if (forward != null) {
-                pm.getDevice().removeForward(forward.getLocalPort(), forward.getRemotePort());
-            }
-        } catch (Exception e) {
-            logger.error("Removing message forward failed: " + e.getMessage(), e);
-        }
-        //remove image forward
-        try {
-            DeviceForward forward = ForwardManager.getInstance().removeImageForward(id);
-            if (forward != null) {
-                pm.getDevice().removeForward(forward.getLocalPort(), forward.getRemoteSocketName(),
-                        IDevice.DeviceUnixSocketNamespace.ABSTRACT);
-            }
-        } catch (Exception e) {
-            logger.error("Removing image forward failed: " + e.getMessage(), e);
-        }
+        pm.removePortForward();
     }
 
     @Override
@@ -365,6 +399,25 @@ public class Application implements IApplication {
         }
 
     }
+
+    public void fireOnDeviceChannelChangedEvent(DefaultDeviceConnection deviceConnection) {
+        DeviceConnectionEvent event = new DeviceConnectionEvent(deviceConnection, DeviceConnectionEvent.ConnectionType.ADB);
+        // Guaranteed to return a non-null array
+        Object[] listeners = deviceListenerList.getListenerList();
+        // Process the listeners last to first, notifying
+        // those that are interested in this event
+        for (int i = listeners.length-2; i>=0; i-=2) {
+            if (listeners[i]==DeviceConnectionListener.class) {
+                try {
+                    ((DeviceConnectionListener)listeners[i+1]).deviceChannelChanged(event);
+                } catch (Throwable e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+        }
+
+    }
+
     protected void fireOnDeviceRemovedEvent(DefaultDeviceConnection deviceConnection) {
         DeviceConnectionEvent event = new DeviceConnectionEvent(deviceConnection, DeviceConnectionEvent.ConnectionType.MESSAGE);
         // Guaranteed to return a non-null array

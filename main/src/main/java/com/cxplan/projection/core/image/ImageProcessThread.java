@@ -50,20 +50,23 @@ public class ImageProcessThread extends Thread {
         }
 
         try {
-            StringBuilder sb = new StringBuilder();
-            sb.append("version: ").append(input.read());
-            sb.append("\nlength: ").append(input.read());
-            sb.append("\npid: ").append(CommonUtil.readIntLowEndian(input));
-            int realWidth = CommonUtil.readIntLowEndian(input);
-            int realHeight = CommonUtil.readIntLowEndian(input);
-            sb.append("\nreal width: ").append(realWidth);
-            sb.append("\nreal height: ").append(realHeight);
-            sb.append("\nvirtual width: ").append(CommonUtil.readIntLowEndian(input));
-            sb.append("\nvirtual height: ").append(CommonUtil.readIntLowEndian(input));
-            sb.append("\nDisplay orientation: ").append(input.read());
-            sb.append("\nQuirk bitflags: ").append(input.read());
-            logger.info(sb.toString());
-
+            if (!connection.isWirelessMode()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("version: ").append(input.read());
+                sb.append("\nlength: ").append(input.read());
+                sb.append("\npid: ").append(CommonUtil.readIntLowEndian(input));
+                int realWidth = CommonUtil.readIntLowEndian(input);
+                int realHeight = CommonUtil.readIntLowEndian(input);
+                sb.append("\nreal width: ").append(realWidth);
+                sb.append("\nreal height: ").append(realHeight);
+                sb.append("\nvirtual width: ").append(CommonUtil.readIntLowEndian(input));
+                sb.append("\nvirtual height: ").append(CommonUtil.readIntLowEndian(input));
+                sb.append("\nDisplay orientation: ").append(input.read());
+                sb.append("\nQuirk bitflags: ").append(input.read());
+                logger.info(sb.toString());
+            } else {
+                logger.info("Wait frame data...");
+            }
             byte[] buffer = new byte[2048];
             //get fire first frame
             //byte[] firstFrameData = extraFirstFrame(realWidth, realHeight);
