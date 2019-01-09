@@ -106,6 +106,8 @@ public class DeviceImageFrame extends BaseWebFrame {
     private boolean isFirstFrame = true;
     private int currentImageWidth = -1;
     private int currentImageHeight = -1;
+    //The preferred width of navigator.
+    private int navigatorBarWidth = -1;
     //The flag indicates whether current image frame is in projection.
     //When the connection status of image channel is changed, controller will notify device of current status.
     private boolean isInProjection;
@@ -661,7 +663,15 @@ public class DeviceImageFrame extends BaseWebFrame {
     }
 
     private JPanel createDeviceButtonPanel() {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel() {
+
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension dim = super.getPreferredSize();
+                dim.width = navigatorBarWidth;
+                return dim;
+            }
+        };
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder());
         panel.setLayout(new JideBoxLayout(panel, JideBoxLayout.LINE_AXIS));
@@ -726,7 +736,12 @@ public class DeviceImageFrame extends BaseWebFrame {
         });
         panel.add(powerBtn, JideBoxLayout.FLEXIBLE);
 
-        return panel;
+        JPanel wrapPane = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        wrapPane.setOpaque(false);
+        wrapPane.setBorder(BorderFactory.createEmptyBorder());
+        wrapPane.add(panel);
+
+        return wrapPane;
     }
 
     public void showWaitingTip(String text) {
@@ -846,6 +861,7 @@ public class DeviceImageFrame extends BaseWebFrame {
             optimalHeight = maxHeight;
         }
 
+        navigatorBarWidth = optimalWidth;
         clientScreen.setCanvasSize(optimalWidth, optimalHeight);
 
         pack();
