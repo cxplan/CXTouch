@@ -20,7 +20,10 @@ CXTouch support at least 4 devices running on a pc simultaneously, the supported
   - Support typing text from pc keyboard.
   - Supports meta keys
   - Copy string content on device and paste string content on pc to editor on device. 
+- Wireless connection: The usb cable is not needed in wireless mode, but may increase image latency.
 - Take a screenshot.
+- Shortcut for brightness up and down.
+- Shortcut for volume up and down.
 - Record screen of device.
 - Setting for quality and size of  image  
 - Support two languages: English and Chinese.
@@ -43,10 +46,10 @@ CXTouch support at least 4 devices running on a pc simultaneously, the supported
 
 ## Latest Release
 
-The first version [1.0](https://github.com/cxplan/CXTouch/releases) is available.
+The first version [1.1](https://github.com/cxplan/CXTouch/releases) is available.
 
 - The package or installer for each platform has two version(with jre and without jre) except Linux (JDK is a part of Linux normally)
-- The 32bit and 64bit version are supported on window os.
+- The 32bit and 64bit version are supported on window os. (the 64 bit version is recommended if your windows is 64 bit.)
 
 
 ## Build
@@ -60,6 +63,8 @@ mvn clean package -DskipTests=true
 ```
 
 Then a built package will be generated in the folder ${project root}/main/target/CXTouch-*.zip
+
+If you want to build mediate apk(CXTouch.apk), please go to the [mediate repository](https://github.com/cxplan/cxtouch_mediate) .
 
 
 
