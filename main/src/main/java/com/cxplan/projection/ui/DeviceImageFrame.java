@@ -136,6 +136,9 @@ public class DeviceImageFrame extends BaseWebFrame {
      */
     public void showWindow() {
         if (isVisible()) {
+            if (getState() == ICONIFIED) {
+                setState(NORMAL);
+            }
             setVisible(true);
             return;
         }
