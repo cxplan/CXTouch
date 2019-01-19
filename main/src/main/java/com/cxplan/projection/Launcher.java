@@ -96,6 +96,10 @@ public class Launcher {
 
         AndroidDebugBridge.init(false);
         final AndroidDebugBridge adb = AndroidDebugBridge.createBridge(adbLocation, false);
+        if (adb == null) {
+            GUIUtil.showErrorMessageDialog("The adb is not available!");
+            return;
+        }
         try {
             logger.info("wait 1 seconds!");
             Thread.sleep(1000);
