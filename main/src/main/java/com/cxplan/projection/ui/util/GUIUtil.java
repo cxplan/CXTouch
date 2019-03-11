@@ -10,6 +10,7 @@ import javax.swing.filechooser.FileFilter;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.io.File;
 import java.util.HashSet;
@@ -313,6 +314,16 @@ public class GUIUtil {
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return null;
+        }
+    }
+
+    /**
+     * Copy specified text to clipboard.
+     */
+    public static void copyText2Clipboard(String text) {
+        if (text != null) {
+            Transferable tText = new StringSelection(text);
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(tText, null);
         }
     }
 

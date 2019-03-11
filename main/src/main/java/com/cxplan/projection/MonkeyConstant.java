@@ -40,7 +40,7 @@ public class MonkeyConstant {
     public static final int KEYCODE_VOLUME_DOWN     = 25;
     public final static int KEYCODE_BACK = 4;
     public final static int KEYCODE_HOME = 3;
-    public final static int KEYCODE_MENU = 82;
+    public final static int KEYCODE_APP_SWITCH = 187;
     public final static int KEYCODE_POWER = 26;
     /** Key code constant: Brightness Down key.
      * Adjusts the screen brightness down. */

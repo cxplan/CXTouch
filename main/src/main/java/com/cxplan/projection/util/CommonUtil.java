@@ -26,7 +26,8 @@ public class CommonUtil {
     //The version code supported by current client.
     //Client will update main package if the version code of installed package doesn't match with this value.
     //The match rule is equals only.
-    public static final int SUPPORTED_VERSION = 2;
+    public static final int SUPPORTED_VERSION = 3;
+    public static final String VERSION_NAME = "1.2";
 
     public static int resolveProcessID(String content, String processName) {
         if (StringUtil.isEmpty(content)) {

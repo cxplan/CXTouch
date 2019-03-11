@@ -21,6 +21,7 @@ import com.cxplan.projection.ui.component.IconButton;
 import com.cxplan.projection.ui.component.IconToggleButton;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.ui.util.IconUtil;
+import com.cxplan.projection.util.CommonUtil;
 import com.cxplan.projection.util.SystemUtil;
 import com.jidesoft.swing.DefaultOverlayable;
 import com.jidesoft.swing.JideBoxLayout;
@@ -252,7 +253,7 @@ public class MainFrame extends BaseFrame {
         //version
         String versionLabel = stringMgr.getString("info.version.label");
         contactPane.add(new JLabel(versionLabel), "1,7");
-        contactPane.add(new JLabel("1.1"), "3,7");
+        contactPane.add(new JLabel(CommonUtil.VERSION_NAME), "3,7");
 
         infoPane.add(contactPane, BorderLayout.SOUTH);
         return infoPane;

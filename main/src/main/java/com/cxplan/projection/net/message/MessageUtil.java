@@ -59,6 +59,7 @@ public class MessageUtil {
      * The command received by controller server
      */
     public static final String CMD_CONTROLLER_IMAGE = "c_image";//The actions related with image channel
+    public static final String CMD_CONTROLLER_CLIPBOARD = "c_clipboard";//The clipboard operation.
 
     public static final int ERROR_TYPE_CODE_NO_PERMISSION = 1;//no permission
     public static final int ERROR_TYPE_CODE_TARGET_MISSED = 2;//target missed.

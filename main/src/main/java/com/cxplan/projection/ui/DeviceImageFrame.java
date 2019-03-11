@@ -59,6 +59,7 @@ public class DeviceImageFrame extends BaseWebFrame {
     public static final ImageIcon ICON_HOME = IconUtil.getIcon("/image/monkey/home.png");
     public static final ImageIcon ICON_POWER = IconUtil.getIcon("/image/monkey/power.png");
     public static final ImageIcon ICON_WEIXIN = IconUtil.getIcon("/image/monkey/wx.png");
+    public static final ImageIcon ICON_APP_SWITCH = IconUtil.getIcon("/image/monkey/app_switch.png");
 
     private static Map<String, DeviceImageFrame> instanceMap = new HashMap<>();
 
@@ -717,13 +718,21 @@ public class DeviceImageFrame extends BaseWebFrame {
         });
         panel.add(homeBtn, JideBoxLayout.FLEXIBLE);
 
-        JideButton wxBtn = new JideButton(ICON_WEIXIN);
+        JideButton wxBtn = new JideButton(ICON_APP_SWITCH);
         wxBtn.setButtonStyle(JideButton.HYPERLINK_STYLE);
-        wxBtn.setToolTipText(stringMgr.getString("navi.button.weixin.tooltip"));
+        wxBtn.setToolTipText(stringMgr.getString("navi.button.appswitch.tooltip"));
         wxBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                startWx();
+                if (!connection.isOnline()) {
+                    GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
+                    return;
+                }
+                try {
+                    monkeyService.press(connection.getId(), MonkeyConstant.KEYCODE_APP_SWITCH);
+                } catch (MessageException e1) {
+                    logger.error("Pressing app switcher button failed:" + e1.getMessage(), e1);
+                }
             }
         });
         panel.add(wxBtn, JideBoxLayout.FLEXIBLE);
