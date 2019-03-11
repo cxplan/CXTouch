@@ -2,7 +2,6 @@ package com.cxplan.projection.ui.component.monkey;
 
 import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.ui.util.GUIUtil;
-import com.cxplan.projection.util.StringUtil;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -117,7 +116,7 @@ public class MonkeyCanvas extends Canvas implements KeyListener{
     @Override
     public void keyTyped(KeyEvent event) {
         char keyChar = event.getKeyChar();
-        if (keyMap.containsKey((int)keyChar)) {
+        if (event.getModifiers() == 0 && keyMap.containsKey((int)keyChar)) {
             return;
         } else {
             inputListener.type(keyChar + "");
@@ -135,7 +134,7 @@ public class MonkeyCanvas extends Canvas implements KeyListener{
             if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {//back: alt + delete/back
                 inputListener.press(MonkeyConstant.KEYCODE_BACK);
             } else if (e.getKeyCode() == KeyEvent.VK_M) { // menu: alt + m
-                inputListener.press(MonkeyConstant.KEYCODE_MENU);
+                inputListener.press(MonkeyConstant.KEYCODE_APP_SWITCH);
             } else if (e.getKeyCode() == KeyEvent.VK_H) { //home : alt + h
                 inputListener.press(MonkeyConstant.KEYCODE_HOME);
             }
