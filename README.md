@@ -46,7 +46,7 @@ CXTouch support at least 4 devices running on a pc simultaneously, the supported
 
 ## Latest Release
 
-The first version [1.2](https://github.com/cxplan/CXTouch/releases) is available.
+The latest version [1.2](https://github.com/cxplan/CXTouch/releases) is available.
 
 - The package or installer for each platform has two version(with jre and without jre) except Linux (JDK is a part of Linux normally)
 - The 32bit and 64bit version are supported on window os. (the 64 bit version is recommended if your windows is 64 bit.)
