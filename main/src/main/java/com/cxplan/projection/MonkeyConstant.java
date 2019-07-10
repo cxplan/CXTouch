@@ -1,5 +1,10 @@
 package com.cxplan.projection;
 
+import com.cxplan.projection.ui.component.ItemMeta;
+
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Created on 2017/5/24.
  *
@@ -19,6 +24,7 @@ public class MonkeyConstant {
     public final static short EVENT_KEY_DOWN = 7;//press down
     public final static short EVENT_KEY_UP = 8;//press up
     public final static short EVENT_WAKE = 9;//wake screen.
+    public final static short EVENT_SLEEP = 10;//make screen sleeping.
     public final static short EVENT_SCROLL = 13;//scroll up the phone window
     public static final short MONKEY_SWITCH_INPUTER = 100;
 
@@ -32,6 +38,7 @@ public class MonkeyConstant {
     public final static int KEYCODE_DOWN = 20;
     public final static int KEYCODE_UP = 19;
     public final static int KEYCODE_RIGHT = 22;
+    public final static int KEYCODE_TAB = 61;
     /** Key code constant: Volume Up key.
      * Adjusts the speaker volume up. */
     public static final int KEYCODE_VOLUME_UP       = 24;
@@ -48,6 +55,10 @@ public class MonkeyConstant {
     /** Key code constant: Brightness Up key.
      * Adjusts the screen brightness up. */
     public static final int KEYCODE_BRIGHTNESS_UP   = 221;
+    //-----------special keycode
+    /** Key code constant: Camera key.
+     * Used to launch a camera application or take pictures. */
+    public static final int KEYCODE_CAMERA          = 27;
 
 
     /**
@@ -67,4 +78,24 @@ public class MonkeyConstant {
      */
     public static final int ROTATION_270 = 3;
 
+    public static Map<Integer, ItemMeta<Integer>> KEY_CODE_MAP = new HashMap<>();
+    static {
+        KEY_CODE_MAP.put(KEYCODE_BACK_SPACE, new ItemMeta<>("Back Delete", KEYCODE_BACK_SPACE));
+        KEY_CODE_MAP.put(KEYCODE_DELETE, new ItemMeta<>("Forward Delete", KEYCODE_DELETE));
+        KEY_CODE_MAP.put(KEYCODE_ENTER, new ItemMeta<>("Enter", KEYCODE_ENTER));
+        KEY_CODE_MAP.put(KEYCODE_LEFT, new ItemMeta<>("Arrow Left", KEYCODE_LEFT));
+        KEY_CODE_MAP.put(KEYCODE_RIGHT, new ItemMeta<>("Arrow Right", KEYCODE_RIGHT));
+        KEY_CODE_MAP.put(KEYCODE_UP, new ItemMeta<>("Arrow Up", KEYCODE_UP));
+        KEY_CODE_MAP.put(KEYCODE_DOWN, new ItemMeta<>("Arrow Down", KEYCODE_DOWN));
+        KEY_CODE_MAP.put(KEYCODE_TAB, new ItemMeta<>("TAB", KEYCODE_TAB));
+        KEY_CODE_MAP.put(KEYCODE_VOLUME_UP, new ItemMeta<>("Volume Up", KEYCODE_VOLUME_UP));
+        KEY_CODE_MAP.put(KEYCODE_VOLUME_DOWN, new ItemMeta<>("Volume Down", KEYCODE_VOLUME_DOWN));
+        KEY_CODE_MAP.put(KEYCODE_BRIGHTNESS_UP, new ItemMeta<>("Brightness Up", KEYCODE_BRIGHTNESS_UP));
+        KEY_CODE_MAP.put(KEYCODE_BRIGHTNESS_DOWN, new ItemMeta<>("Brightness Down", KEYCODE_BRIGHTNESS_DOWN));
+        KEY_CODE_MAP.put(KEYCODE_BACK, new ItemMeta<>("Back", KEYCODE_BACK));
+        KEY_CODE_MAP.put(KEYCODE_HOME, new ItemMeta<>("Home", KEYCODE_HOME));
+        KEY_CODE_MAP.put(KEYCODE_APP_SWITCH, new ItemMeta<>("App Switch", KEYCODE_APP_SWITCH));
+        KEY_CODE_MAP.put(KEYCODE_POWER, new ItemMeta<>("Power", KEYCODE_POWER));
+        KEY_CODE_MAP.put(KEYCODE_CAMERA, new ItemMeta<>("Camera", KEYCODE_CAMERA));
+    }
 }

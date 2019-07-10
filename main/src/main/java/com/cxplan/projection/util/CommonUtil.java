@@ -23,11 +23,17 @@ public class CommonUtil {
     public static final String PACKAGE_MAIN = "com.cxplan.projection.mediate";
     //The process name of main application run on device.
     public static final String PROCESS_NAME_MAIN = "com.cxplan.touch.mediate";
+    //The package name of script application.
+    public static final String PACKAGE_SCRIPT = "com.cxplan.projection.mediate.test";
+    //The process name of script application run on device.
+    public static final String PROCESS_NAME_SCRIPT = "com.cxplan.script.mediate";
     //The version code supported by current client.
     //Client will update main package if the version code of installed package doesn't match with this value.
     //The match rule is equals only.
-    public static final int SUPPORTED_VERSION = 3;
-    public static final String VERSION_NAME = "1.2";
+    public static final int MAIN_SUPPORTED_VERSION = 3;
+    public static final String VERSION_NAME = "1.3";
+    //the version related with script application.
+    public static final int SCRIPT_SUPPORTED_VERSION = 1;
 
     public static int resolveProcessID(String content, String processName) {
         if (StringUtil.isEmpty(content)) {
@@ -160,4 +166,45 @@ public class CommonUtil {
         return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
     }
 
+
+    /**
+     * Write byte array to specified file.
+     *
+     * @param data byte array.
+     * @param file local file.
+     * @throws IOException
+     */
+    public static void writeByteArray2File(byte[] data, File file) throws IOException {
+        OutputStream out = null;
+        try {
+            out = openOutputStream(file, false);
+            out.write(data);
+            out.close(); // don't swallow close Exception if copy completes normally
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (Exception e){}
+            }
+        }
+    }
+
+    public static FileOutputStream openOutputStream(File file, boolean append) throws IOException {
+        if (file.exists()) {
+            if (file.isDirectory()) {
+                throw new IOException("File '" + file + "' exists but is a directory");
+            }
+            if (file.canWrite() == false) {
+                throw new IOException("File '" + file + "' cannot be written to");
+            }
+        } else {
+            File parent = file.getParentFile();
+            if (parent != null) {
+                if (!parent.mkdirs() && !parent.isDirectory()) {
+                    throw new IOException("Directory '" + parent + "' could not be created");
+                }
+            }
+        }
+        return new FileOutputStream(file, append);
+    }
 }

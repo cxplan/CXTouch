@@ -73,6 +73,12 @@ public interface IDeviceService {
      */
     void wake(String deviceId) throws MessageException;
     /**
+     * Lock the screen of device.
+     * @param deviceId the ID of device.
+     *
+     */
+    void sleep(String deviceId) throws MessageException;
+    /**
      * Start an activity.
      *
      * @param deviceId The id of device.
@@ -113,7 +119,7 @@ public interface IDeviceService {
     /**
      * Input text to specified device
      */
-    void type(String deviceId, String text);
+    void type(String deviceId, String text) throws MessageException;
 
     /**
      * Install apk file to device.

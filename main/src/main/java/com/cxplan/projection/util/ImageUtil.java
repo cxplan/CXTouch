@@ -760,36 +760,4 @@ public class ImageUtil {
         return newImage;
     }
 
-    
-    public static void main(String[] args) {
-        BufferedImage image = new BufferedImage(300, 100, BufferedImage.TYPE_4BYTE_ABGR);
-        Graphics2D g2d = image.createGraphics();
-        image = g2d.getDeviceConfiguration().createCompatibleImage(image.getWidth(), image.getHeight(), Transparency.TRANSLUCENT);
-        g2d.dispose();
-        g2d = image.createGraphics();
-
-        String drawString = "映课情报课";
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setColor(Color.BLUE);
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
-
-        Font font = new Font("宋体", Font.BOLD, 50);
-        g2d.setFont(font);
-        FontMetrics fm = g2d.getFontMetrics(font);
-        int strWidth = fm.stringWidth(drawString);
-        int strHeight = fm.getHeight();
-        int x = (image.getWidth() - strWidth) / 2;
-        g2d.setStroke(new BasicStroke(4.0f));
-        g2d.drawString(drawString, x,strHeight);
-        g2d.dispose();
-
-        try {
-            BufferedImage main = ImageIO.read(new File("d:\\main.jpg"));
-            BufferedImage logo = ImageIO.read(new File("d:\\映课.png"));
-            BufferedImage result = drawImageMarker(main, image, 0.3f, 45, MARKER_POS_LEFT_MIDDLE);
-            image2File(result, "png", new File("d:\\file.jpg"));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
 }

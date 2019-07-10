@@ -122,4 +122,8 @@ public class BaseDialog extends JDialog {
         GUIUtil.removeWindow(this);
         super.dispose();
     }
+
+    public void showCenterToOwner() {
+        GUIUtil.showWindowCenterToOwner(this);
+    }
 }

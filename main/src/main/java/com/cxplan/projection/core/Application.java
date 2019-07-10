@@ -3,9 +3,7 @@ package com.cxplan.projection.core;
 import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
 import com.cxplan.projection.IApplication;
-import com.cxplan.projection.MainFrame;
 import com.cxplan.projection.core.adb.AdbUtil;
-import com.cxplan.projection.core.adb.DeviceForward;
 import com.cxplan.projection.core.adb.ForwardManager;
 import com.cxplan.projection.core.connection.DeviceConnectionEvent;
 import com.cxplan.projection.core.connection.DeviceConnectionListener;
@@ -17,8 +15,13 @@ import com.cxplan.projection.i18n.StringManagerFactory;
 import com.cxplan.projection.model.DeviceInfo;
 import com.cxplan.projection.net.DSCodecFactory;
 import com.cxplan.projection.net.DeviceIoHandlerAdapter;
+import com.cxplan.projection.script.ScriptConnectionEvent;
+import com.cxplan.projection.script.ScriptConnectionListener;
+import com.cxplan.projection.script.io.ScriptDeviceConnection;
+import com.cxplan.projection.script.io.ScriptDeviceIoHandlerAdapter;
 import com.cxplan.projection.service.IDeviceService;
 import com.cxplan.projection.service.IInfrastructureService;
+import com.cxplan.projection.service.IScriptService;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.util.StringUtil;
 import com.cxplan.projection.util.SystemUtil;
@@ -111,16 +114,24 @@ public class Application implements IApplication {
      */
     private DeviceReconnectionManager deviceReconnectManager;
     private Map<String, DefaultDeviceConnection> deviceMap;
+    private Map<String, ScriptDeviceConnection> scriptConnectionMap;
 
     private ExecutorService deviceThreadPool;
     private ExecutorService executors;
 
     private NioSocketConnector deviceConnector;
+    private NioSocketConnector scriptDeviceConnector;
     protected EventListenerList deviceListenerList = new EventListenerList();
+
+    //script event
+    protected CopyOnWriteArrayList<ScriptConnectionListener> scriptConnectionListenerList =
+            new CopyOnWriteArrayList<>();
 
     private Application() {
         ForwardManager.getInstance();
         deviceMap = new ConcurrentHashMap<>();
+        scriptConnectionMap = new ConcurrentHashMap<>();
+
         loadSystemParameters();
         deviceThreadPool = Executors.newFixedThreadPool(5);
         executors = Executors.newCachedThreadPool();
@@ -167,7 +178,13 @@ public class Application implements IApplication {
         if (existed) {
             return null;
         }
-//
+        //create script connection.
+        ScriptDeviceConnection scriptConnection = scriptConnectionMap.get(id);
+        if (scriptConnection == null) {
+            scriptConnection = new ScriptDeviceConnection(id, device, this);
+            scriptConnectionMap.put(id, scriptConnection);
+        }
+
         final DefaultDeviceConnection connection = deviceConnection;
 
         Runnable task = new Runnable() {
@@ -235,6 +252,12 @@ public class Application implements IApplication {
         if (!pm.removeDeviceChannel(device)) {
             logger.info("there is no channel, the connection will be removed: {}", id);
             removeDeviceConnection(id);
+        } else {
+            if (!pm.hasUsbChannel()) {//Only script is supported on usb channel.
+                //remove script
+                ScriptDeviceConnection scriptConnection = scriptConnectionMap.remove(id);
+                scriptConnection.close();
+            }
         }
 
     }
@@ -249,6 +272,9 @@ public class Application implements IApplication {
             fireOnDeviceRemovedEvent(pm);
         } catch (Exception ex) {
             logger.error(ex.getMessage(), ex);
+        } finally {
+            ScriptDeviceConnection scriptConnection = scriptConnectionMap.remove(id);
+            scriptConnection.close();
         }
 
         pm.removePortForward();
@@ -266,6 +292,12 @@ public class Application implements IApplication {
     }
 
     @Override
+    public IScriptService getScriptService() {
+        IScriptService scriptService = ServiceFactory.getService("scriptService");
+        return scriptService;
+    }
+
+    @Override
     public IInfrastructureService getInfrastructureService() {
         IInfrastructureService infrastructureService = ServiceFactory.getService("infrastructureService");
         return infrastructureService;
@@ -276,6 +308,14 @@ public class Application implements IApplication {
     }
     public void removeDeviceConnectionListener(DeviceConnectionListener listener) {
         deviceListenerList.remove(DeviceConnectionListener.class, listener);
+    }
+
+    public void addScriptConnectionListener(ScriptConnectionListener listener) {
+        scriptConnectionListenerList.add(listener);
+    }
+
+    public void removeScriptConnectionListener(ScriptConnectionListener listener) {
+        scriptConnectionListenerList.remove(listener);
     }
 
     public List<String> getDeviceList() {
@@ -289,6 +329,11 @@ public class Application implements IApplication {
     @Override
     public DefaultDeviceConnection getDeviceConnection(String deviceId) {
         return deviceMap.get(deviceId);
+    }
+
+    @Override
+    public ScriptDeviceConnection getScriptConnection(String deviceId) {
+        return scriptConnectionMap.get(deviceId);
     }
 
     private void loadSystemParameters() {
@@ -311,6 +356,10 @@ public class Application implements IApplication {
 
     public NioSocketConnector getDeviceConnector() {
         return deviceConnector;
+    }
+
+    public NioSocketConnector getScriptDeviceConnector() {
+        return scriptDeviceConnector;
     }
 
     /**
@@ -436,6 +485,34 @@ public class Application implements IApplication {
 
     }
 
+    public void fireOnScriptConnectedEvent(ScriptDeviceConnection scriptConnection) {
+        ScriptConnectionEvent event = new ScriptConnectionEvent(scriptConnection);
+        // Process the listeners last to first, notifying
+        // those that are interested in this event
+        for (ScriptConnectionListener listener : scriptConnectionListenerList) {
+            try {
+                listener.connected(event);
+            } catch (Throwable e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+
+    }
+
+    public void fireOnScriptConnectionClosedEvent(ScriptDeviceConnection scriptConnection) {
+        ScriptConnectionEvent event = new ScriptConnectionEvent(scriptConnection);
+        // Process the listeners last to first, notifying
+        // those that are interested in this event
+        for (ScriptConnectionListener listener : scriptConnectionListenerList) {
+            try {
+                listener.connectionClosed(event);
+            } catch (Throwable e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+
+    }
+
     private void createDeviceConnector() {
         NioSocketConnector connector = new NioSocketConnector();
 
@@ -444,6 +521,16 @@ public class Application implements IApplication {
         connector.getFilterChain().addLast("threadModel", new ExecutorFilter(executors));
 
         deviceConnector = connector;
+
+        NioSocketConnector scriptConnector = new NioSocketConnector();
+
+        scriptConnector.setHandler(new ScriptDeviceIoHandlerAdapter(this));
+        scriptConnector.getFilterChain().addLast("codec", new ProtocolCodecFilter( new DSCodecFactory()));
+        scriptConnector.getFilterChain().addLast("threadModel", new ExecutorFilter(executors));
+
+        scriptDeviceConnector = scriptConnector;
+
+
     }
 
 }

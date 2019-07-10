@@ -70,7 +70,7 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
     @Override
     public void startMainProcess(final IDevice device) {
 
-        int pid = checkMainProcess(device);
+        int pid = AdbUtil.checkApplicationProcess(device, CommonUtil.PROCESS_NAME_MAIN);
         if (pid > 0) {
             logger.info("The main process existed already: " + pid);
             return;
@@ -358,22 +358,6 @@ public class ControllerInfrastructureService extends BaseBusinessService impleme
             throw new RuntimeException("Executing disconnect failed: " + e.getMessage(), e);
         }
 
-    }
-
-    private int checkMainProcess(IDevice device) {
-        String cmd = AdbUtil.getPsCommand(device) + "|grep " + CommonUtil.PROCESS_NAME_MAIN;
-        String ret;
-        try {
-            ret = AdbUtil.shell(cmd, device);
-            if (StringUtil.isEmpty(ret)) {
-                return -1;
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            return -1;
-        }
-        ret = ret.trim();
-        return CommonUtil.resolveProcessID(ret, CommonUtil.PROCESS_NAME_MAIN);
     }
 
     private String buildMainCmd(IDevice device) {

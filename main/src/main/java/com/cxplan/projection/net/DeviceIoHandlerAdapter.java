@@ -1,6 +1,7 @@
 package com.cxplan.projection.net;
 
 import com.cxplan.projection.IApplication;
+import com.cxplan.projection.core.BaseDeviceConnection;
 import com.cxplan.projection.core.DefaultDeviceConnection;
 import com.cxplan.projection.core.command.CommandHandlerFactory;
 import com.cxplan.projection.core.command.ICommandHandler;
@@ -46,7 +47,7 @@ public class DeviceIoHandlerAdapter extends BaseIoHandlerAdapter {
             return;
         }
 
-        DefaultDeviceConnection connection = (DefaultDeviceConnection) session.getAttribute(CLIENT_SESSION);
+        BaseDeviceConnection connection = (BaseDeviceConnection) session.getAttribute(CLIENT_SESSION);
         //2. Then span message collector.
         if (connection == null) {
             logger.error("The session is not initialized, but received a message:" + msg.getCommand());

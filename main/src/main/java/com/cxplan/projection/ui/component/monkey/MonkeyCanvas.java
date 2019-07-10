@@ -32,6 +32,7 @@ public class MonkeyCanvas extends Canvas implements KeyListener{
         keyMap.put(KeyEvent.VK_RIGHT, MonkeyConstant.KEYCODE_RIGHT);
         keyMap.put(KeyEvent.VK_UP, MonkeyConstant.KEYCODE_UP);
         keyMap.put(KeyEvent.VK_DOWN, MonkeyConstant.KEYCODE_DOWN);
+        keyMap.put(KeyEvent.VK_TAB, MonkeyConstant.KEYCODE_TAB);
     }
 
     private Point inputPosition;
@@ -111,6 +112,8 @@ public class MonkeyCanvas extends Canvas implements KeyListener{
         addInputMethodListener(new DefaultInputMethodListener());
         addKeyListener(this);
         enableInputMethods(true);
+
+        setFocusTraversalKeysEnabled(false);
     }
 
     @Override
@@ -159,6 +162,15 @@ public class MonkeyCanvas extends Canvas implements KeyListener{
             inputMethodRequestHandler = new DefaultInputMethodRequests();
         }
         return inputMethodRequestHandler;
+    }
+
+    /**
+     * Convert coordinates on PC to coordinates on device.
+     * @param panelPoint the coordinates on PC.
+     * @return the coordinates on device.
+     */
+    public Point convert2DevicePoint(Point panelPoint) {
+        return getRealPoint(panelPoint);
     }
 
     private Point getRealPoint(Point p) {

@@ -126,6 +126,7 @@ public class CXLookAndFeel extends WebLookAndFeel {
         globalAcceleratorFont = defaultFont;
         globalTitleFont = defaultFont;
         globalTextFont = defaultFont;
+        toolTipFont =  defaultFont;
 
         super.initialize();
     }

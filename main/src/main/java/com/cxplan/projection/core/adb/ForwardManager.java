@@ -11,9 +11,13 @@ public class ForwardManager {
     public static final int MESSAGE_PORT_START = 20000;
     public static final int MESSAGE_REMOTE_PORT = 2014;
     public static final int IMAGE_REMOTE_PORT = 2015;
+    public static final int MONKEY_REMOTE_PORT = 12345;
+    public static final int SCRIPT_REMOTE_PORT = 2020;
+
     public static final int IMAGE_PORT_START = 30000;
     public static final int MONKEY_PORT_START = 40000;
-    public static final int MONKEY_REMOTE_PORT = 12345;
+    public static final int SCRIPT_PORT_START = 45000;
+
     public static final String IMAGE_REMOTE_SOCKET_NAME = "minicap";
     private static ForwardManager instance;
 
@@ -46,6 +50,13 @@ public class ForwardManager {
     private Set<Integer> monkeyPortQueue;
     private int currentMonkeyPort;
 
+    /**
+     * key: device id, value: script forward related with device.
+     */
+    private Map<String, DeviceForward> scriptForwardMap;
+    private Set<Integer> scriptPortQueue;
+    private int currentScriptPort;
+
 
     private ForwardManager() {
         messageForwardMap = Collections.synchronizedMap(new HashMap<String, DeviceForward>());
@@ -59,6 +70,10 @@ public class ForwardManager {
         monkeyForwardMap = Collections.synchronizedMap(new HashMap<String, DeviceForward>());
         monkeyPortQueue = new HashSet<>();
         currentMonkeyPort = MONKEY_PORT_START;
+
+        scriptForwardMap = Collections.synchronizedMap(new HashMap<String, DeviceForward>());
+        scriptPortQueue = new HashSet<>();
+        currentScriptPort = SCRIPT_PORT_START;
     }
 
     public synchronized int putMessageForward(String deviceId) {
@@ -99,6 +114,7 @@ public class ForwardManager {
         returnPort(imagePortQueue, forward.getLocalPort());
         return forward;
     }
+
     public synchronized int putMonkeyForward(String deviceId) {
         DeviceForward forward = monkeyForwardMap.get(deviceId);
         if (forward == null) {
@@ -116,6 +132,26 @@ public class ForwardManager {
             return null;
         }
         returnPort(monkeyPortQueue, forward.getLocalPort());
+        return forward;
+    }
+
+    public synchronized int putScriptForward(String deviceId) {
+        DeviceForward forward = scriptForwardMap.get(deviceId);
+        if (forward == null) {
+            forward = new DeviceForward();
+            forward.setRemotePort(SCRIPT_REMOTE_PORT);
+            forward.setLocalPort(takeScriptPort());
+            scriptForwardMap.put(deviceId, forward);
+        }
+        return forward.getLocalPort();
+    }
+
+    public synchronized DeviceForward removeScriptForward(String deviceId) {
+        DeviceForward forward = scriptForwardMap.remove(deviceId);
+        if (forward == null) {
+            return null;
+        }
+        returnPort(scriptPortQueue, forward.getLocalPort());
         return forward;
     }
 
@@ -165,10 +201,26 @@ public class ForwardManager {
             return port;
         }
 
-        if (currentMonkeyPort > 49999) {
+        if (currentMonkeyPort > 44999) {
             throw new RuntimeException("allocating monkey forward port failed: the max value is reached: " + currentMonkeyPort);
         }
         return currentMonkeyPort++;
+    }
+    private int takeScriptPort() {
+        int port = -1;
+        for (int p : scriptPortQueue) {
+            port = p;
+            break;
+        }
+        if (port != -1) {
+            scriptPortQueue.remove(port);
+            return port;
+        }
+
+        if (currentScriptPort > 45999) {
+            throw new RuntimeException("allocating script forward port failed: the max value is reached: " + currentScriptPort);
+        }
+        return currentScriptPort++;
     }
 
 }

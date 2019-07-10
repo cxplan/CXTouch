@@ -41,4 +41,8 @@ public class BaseFrame extends JFrame{
         GUIUtil.removeWindow(this);
         super.dispose();
     }
+
+    public void showCenterToOwner() {
+        GUIUtil.showWindowCenterToOwner(this);
+    }
 }

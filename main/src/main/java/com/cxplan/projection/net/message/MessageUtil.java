@@ -54,12 +54,18 @@ public class MessageUtil {
     public static final String CMD_DEVICE_LOCATE = "d_locate";//locate device.
     public static final String CMD_DEVICE_CREATE_SESSION = "d_create";//connect to device.
     public static final String CMD_DEVICE_IMAGE = "d_image";//Tell device something about image channel.
+    //script commands
+    public static final String CMD_DEVICE_SCRIPT_SPAN = "d_span";//Span the specified component by coordinates.
+    public static final String CMD_DEVICE_SCRIPT_DUMP = "d_dump";//dump the hierarchy views
+    public static final String CMD_DEVICE_SCRIPT_WAIT_IDLE = "d_wait_idle";//wait device idle event.
+    public static final String CMD_DEVICE_SCRIPT_WAIT_VIEW = "d_wait_view";//wait view presented on screen.
 
     /**
      * The command received by controller server
      */
     public static final String CMD_CONTROLLER_IMAGE = "c_image";//The actions related with image channel
     public static final String CMD_CONTROLLER_CLIPBOARD = "c_clipboard";//The clipboard operation.
+    public static final String CMD_CONTROLLER_SCRIPT_VIEW_NODE = "c_view_node";//The view node for script command.
 
     public static final int ERROR_TYPE_CODE_NO_PERMISSION = 1;//no permission
     public static final int ERROR_TYPE_CODE_TARGET_MISSED = 2;//target missed.

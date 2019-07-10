@@ -88,7 +88,7 @@ public class ClientConnection {
     /**
      * Connect to server.
      */
-    public void connect() {}
+    public void connect() throws ConnectException{}
     /**
      * Close all network connection.
      */

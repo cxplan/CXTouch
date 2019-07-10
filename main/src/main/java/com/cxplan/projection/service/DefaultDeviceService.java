@@ -9,6 +9,10 @@ import com.cxplan.projection.core.connection.IDeviceConnection;
 import com.cxplan.projection.net.message.Message;
 import com.cxplan.projection.net.message.MessageException;
 import com.cxplan.projection.net.message.MessageUtil;
+import com.cxplan.projection.script.CommandType;
+import com.cxplan.projection.script.ScriptRecorder;
+import com.cxplan.projection.script.command.*;
+import com.cxplan.projection.script.io.ScriptDeviceConnection;
 import com.cxplan.projection.util.CommonUtil;
 import com.cxplan.projection.util.ImageUtil;
 import org.slf4j.Logger;
@@ -46,7 +50,7 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
         String pid = deviceId[0];
         IDeviceConnection pm = application.getDeviceConnection(pid);
         if (pm == null) {
-            logger.error("The phone is offline: " + deviceId);
+            logger.error("The device is offline: " + deviceId);
             return false;
         }
         if(!(pm instanceof DefaultDeviceConnection)) {
@@ -188,11 +192,11 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
     }
 
     /**
-     * type some text to device.
+     * Type some text to device.
      *
      */
     @Override
-    public void type(String deviceId, String text) {
+    public void type(String deviceId, String text) throws MessageException {
         DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
         if (pm == null) {
             String error = "The phone is offline: " + deviceId;
@@ -203,10 +207,12 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
         message.setParameter("s", text);
         message.setParameter("type", MonkeyConstant.EVENT_TYPE);
 
-        try {
-            sendMessage(pm, message);
-        } catch (MessageException e) {
-            logger.error(e.getMessage(), e);
+        sendMessage(pm, message);
+
+        ScriptDeviceConnection scriptConnection = getScriptConnection(deviceId);
+        if (scriptConnection != null && scriptConnection.isRecording()) {
+            TypeCommand command = new TypeCommand(text);
+            scriptConnection.getScriptRecorder().addEvent(command);
         }
     }
 
@@ -228,68 +234,100 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
 
     @Override
     public void touchDown(String deviceId, int x, int y) throws MessageException {
-        /*IChimpDevice chimpDevice = getDevice(deviceId);
-        try {
-            chimpDevice.getManager().touchDown(x, y);
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }*/
         DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
         if (pm == null) {
             String error = "The phone is offline: " + deviceId;
             logger.error(error);
             throw new MonkeyException(error);
         }
-        Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
-        message.setParameter("x", (float)x);
-        message.setParameter("y", (float)y);
-        message.setParameter("type", MonkeyConstant.EVENT_TOUCH_DOWN);
 
-        sendMessage(pm, message);
+        //script event
+        ScriptDeviceConnection scriptConnection = getScriptConnection(deviceId);
+        int seqNum = 0;
+        ScriptRecorder recorder = scriptConnection.getScriptRecorder();
+        if (scriptConnection.isRecording()) {
+            MouseCommand command = new MouseCommand(CommandType.MOUSE_DOWN, x, y);
+            command.setValidateView(true);
+            long currentTime = System.currentTimeMillis();
+            if (recorder.getLastEventTime() > 0) {
+                scriptConnection.getScriptRecorder().addTimeGap((int)(currentTime - recorder.getLastEventTime()));
+            }
+
+            seqNum = scriptConnection.getScriptRecorder().addEvent(command);
+        }
+
+        if (scriptConnection.isRecording()) {//recording
+            application.getScriptService().touchDown(deviceId, x, y, seqNum);
+        } else {
+            Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
+            message.setParameter("x", (float) x);
+            message.setParameter("y", (float) y);
+            message.setParameter("type", MonkeyConstant.EVENT_TOUCH_DOWN);
+
+            sendMessage(pm, message);
+        }
+
+
     }
 
     @Override
     public void touchUp(String deviceId, int x, int y) throws MessageException {
-        /*IChimpDevice chimpDevice = getDevice(deviceId);
-        try {
-            chimpDevice.getManager().touchUp(x, y);
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }*/
         DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
         if (pm == null) {
-            String error = "The phone is offline: " + deviceId;
+            String error = "The device is offline: " + deviceId;
             logger.error(error);
             throw new MonkeyException(error);
         }
-        Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
-        message.setParameter("x", (float)x);
-        message.setParameter("y", (float)y);
-        message.setParameter("type", MonkeyConstant.EVENT_TOUCH_UP);
 
-        sendMessage(pm, message);
+        ScriptDeviceConnection scriptConnection = getScriptConnection(deviceId);
+        ScriptRecorder recorder = scriptConnection.getScriptRecorder();
+        if (scriptConnection.isRecording()) {
+            application.getScriptService().touchUp(deviceId, x, y);
+            MouseCommand command = new MouseCommand(CommandType.MOUSE_UP, x, y);
+            long currentTime = System.currentTimeMillis();
+            scriptConnection.getScriptRecorder().addTimeGap((int)(currentTime - recorder.getLastEventTime()));
+
+            scriptConnection.getScriptRecorder().addEvent(command);
+        } else {
+            Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
+            message.setParameter("x", (float) x);
+            message.setParameter("y", (float) y);
+            message.setParameter("type", MonkeyConstant.EVENT_TOUCH_UP);
+
+            sendMessage(pm, message);
+        }
+
     }
 
     @Override
     public void touchMove(String deviceId, int x, int y) throws MessageException {
-        /*IChimpDevice chimpDevice = getDevice(deviceId);
-        try {
-            chimpDevice.getManager().touchMove(x, y);
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }*/
         DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
         if (pm == null) {
             String error = "The phone is offline: " + deviceId;
             logger.error(error);
             throw new MonkeyException(error);
         }
-        Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
-        message.setParameter("x", (float)x);
-        message.setParameter("y", (float)y);
-        message.setParameter("type", MonkeyConstant.EVENT_TOUCH_MOVE);
 
-        sendMessage(pm, message);
+        ScriptDeviceConnection scriptConnection = getScriptConnection(deviceId);
+        ScriptRecorder recorder = scriptConnection.getScriptRecorder();
+        if (scriptConnection != null && scriptConnection.isRecording()) {
+            application.getScriptService().touchMove(deviceId, x, y);
+            MouseCommand command = new MouseCommand(CommandType.MOUSE_MOVE, x, y);
+            long currentTime = System.currentTimeMillis();
+            long gap = currentTime - recorder.getLastEventTime();
+            if (gap > 5) {
+                scriptConnection.getScriptRecorder().addTimeGap((int) gap);
+            }
+
+            scriptConnection.getScriptRecorder().addEvent(command);
+        } else {
+            Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
+            message.setParameter("x", (float) x);
+            message.setParameter("y", (float) y);
+            message.setParameter("type", MonkeyConstant.EVENT_TOUCH_MOVE);
+
+            sendMessage(pm, message);
+        }
     }
 
     /**
@@ -310,6 +348,13 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
         message.setParameter("type", MonkeyConstant.EVENT_PRESS);
 
         pm.sendMessage(message);
+
+        //script event
+        ScriptDeviceConnection scriptConnection = getScriptConnection(deviceId);
+        if (scriptConnection != null && scriptConnection.isRecording()) {
+            ScriptCommand command = new PressCommand(keyCode);
+            scriptConnection.getScriptRecorder().addEvent(command);
+        }
     }
 
     @Override
@@ -363,7 +408,7 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
     public void wake(String deviceId) throws MessageException {
         DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
         if (pm == null) {
-            String error = "The phone is offline: " + deviceId;
+            String error = "The device is offline: " + deviceId;
             logger.error(error);
             throw new MonkeyException(error);
         }
@@ -372,6 +417,35 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
         message.setParameter("type", MonkeyConstant.EVENT_WAKE);
 
         pm.sendMessage(message);
+
+        //script event
+        ScriptDeviceConnection scriptConnection = getScriptConnection(deviceId);
+        if (scriptConnection != null && scriptConnection.isRecording()) {
+            ToggleScreenCommand command = new ToggleScreenCommand(true);
+            scriptConnection.getScriptRecorder().addEvent(command);
+        }
+    }
+
+    @Override
+    public void sleep(String deviceId) throws MessageException {
+        DefaultDeviceConnection pm = (DefaultDeviceConnection)application.getDeviceConnection(deviceId);
+        if (pm == null) {
+            String error = "The device is offline: " + deviceId;
+            logger.error(error);
+            throw new MonkeyException(error);
+        }
+
+        Message message = new Message(MessageUtil.CMD_DEVICE_MONKEY);
+        message.setParameter("type", MonkeyConstant.EVENT_SLEEP);
+
+        pm.sendMessage(message);
+
+        //script event
+        ScriptDeviceConnection scriptConnection = getScriptConnection(deviceId);
+        if (scriptConnection != null && scriptConnection.isRecording()) {
+            ToggleScreenCommand command = new ToggleScreenCommand(false);
+            scriptConnection.getScriptRecorder().addEvent(command);
+        }
     }
 
     @Override
@@ -383,6 +457,13 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
         cmdList.add("start");
         cmdList.addAll(intentArgs);
         shell(deviceId, cmdList.toArray(ZERO_LENGTH_STRING_ARRAY));
+
+        //script event
+        ScriptDeviceConnection scriptConnection = getScriptConnection(deviceId);
+        if (scriptConnection != null && scriptConnection.isRecording()) {
+            StartAppCommand command = new StartAppCommand(component);
+            scriptConnection.getScriptRecorder().addEvent(command);
+        }
     }
 
     @Override
@@ -401,6 +482,13 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
         message.setParameter("type", MonkeyConstant.EVENT_SCROLL);
 
         pm.sendMessage(message);
+
+        //script event
+        ScriptDeviceConnection scriptConnection = getScriptConnection(deviceId);
+        if (scriptConnection != null && scriptConnection.isRecording()) {
+            ScrollCommand command = new ScrollCommand(true);
+            scriptConnection.getScriptRecorder().addEvent(command);
+        }
     }
 
     @Override
@@ -419,6 +507,13 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
         message.setParameter("type", MonkeyConstant.EVENT_SCROLL);
 
         pm.sendMessage(message);
+
+        //script event
+        ScriptDeviceConnection scriptConnection = getScriptConnection(deviceId);
+        if (scriptConnection != null && scriptConnection.isRecording()) {
+            ScrollCommand command = new ScrollCommand(false);
+            scriptConnection.getScriptRecorder().addEvent(command);
+        }
     }
 
     private String shell(String deviceId, String... args) {
@@ -427,6 +522,15 @@ public class DefaultDeviceService extends BaseBusinessService implements IDevice
             cmd.append(arg).append(" ");
         }
         return shell(deviceId, cmd.toString());
+    }
+
+    private ScriptDeviceConnection getScriptConnection(String deviceId) {
+        ScriptDeviceConnection scriptConnection = application.getScriptConnection(deviceId);
+        if (scriptConnection == null) {
+            throw new RuntimeException("The script connection is lost: " + deviceId);
+        }
+
+        return scriptConnection;
     }
 
     private static boolean isNullOrEmpty(String string) {

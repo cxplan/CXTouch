@@ -35,7 +35,6 @@ public class FontUtil
     {
         return font.deriveFont(style, size);
         //return new Font("YaHei Consolas Hybrid",  style, size);
-        //return new Font("微软雅黑", style, size);
     }
 
 }

@@ -54,6 +54,7 @@ public class DeviceDisplayPanel extends JPanel {
     private Color color = null;
     private Image image = null;
     private BufferedImage buffer = null;
+    private IDisplayPainter expandPainter;
 
     private boolean forceCanvasResize = false;
 
@@ -101,6 +102,15 @@ public class DeviceDisplayPanel extends JPanel {
 
             }
         });
+    }
+
+    public IDisplayPainter getExpandPainter() {
+        return expandPainter;
+    }
+
+    public void setExpandPainter(IDisplayPainter expandPainter) {
+        this.expandPainter = expandPainter;
+        getCanvas().repaint();
     }
 
     private void doInit(final GraphicsConfiguration gc, final DisplayMode displayMode, final double gamma, MonkeyInputListener inputListener) {
@@ -192,12 +202,18 @@ public class DeviceDisplayPanel extends JPanel {
                     if (buffer != null) {
                         g.drawImage(buffer, 0, 0, canvas.getWidth(), canvas.getHeight(), null);
                     }
+
+                    if (expandPainter != null) {
+                        expandPainter.render(g);
+                    }
+
                     g.dispose();
                 } while (strategy.contentsRestored());
                 strategy.show();
             } while (strategy.contentsLost());
         } catch (NullPointerException e) {
         } catch (IllegalStateException e) { }
+
     }
 
     public void setExtComponent(JComponent comp) {

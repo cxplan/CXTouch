@@ -36,11 +36,9 @@ import java.nio.channels.SocketChannel;
  * @author KennyLiu
  * @created on 2018/5/5
  */
-public class DefaultDeviceConnection extends ClientConnection implements IDeviceConnection {
+public class DefaultDeviceConnection extends BaseDeviceConnection implements IDeviceConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDeviceConnection.class);
-
-    public static final String PROPERTY_DEVICE_CHANNEL = "device_channel";
 
     private IApplication application;
     private DeviceInfo deviceMeta;
@@ -382,16 +380,6 @@ public class DefaultDeviceConnection extends ClientConnection implements IDevice
         this.connectCount = connectCount;
     }
 
-    public boolean visitMessageCollectors(Message message) {
-        boolean ret = false;
-        for (MessageCollector collector : getPacketCollectors()) {
-            if (processMessage(collector, message)) {
-                ret = true;
-            }
-        }
-
-        return ret;
-    }
 
     @Override
     public void close() {

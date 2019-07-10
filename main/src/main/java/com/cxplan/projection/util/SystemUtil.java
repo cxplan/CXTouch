@@ -135,7 +135,7 @@ public class SystemUtil {
         if (isWindow()) {
             Runtime.getRuntime().exec("cmd /c rd/s/q " + path);
         } else {
-            throw new UnsupportedEncodingException("当前系统不支持");
+            throw new UnsupportedEncodingException("Only support Window OS.");
         }
     }
 

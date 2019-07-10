@@ -1,13 +1,13 @@
 package com.cxplan.projection.core.adb;
 
 import com.android.ddmlib.*;
+import com.cxplan.projection.util.CommonUtil;
 import com.cxplan.projection.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -212,6 +212,29 @@ public class AdbUtil {
         } catch (ShellCommandUnresponsiveException e) {
             logger.info("blocking cmd: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Try to read the process ID of application from android system.
+     *
+     * @param device the device object.
+     * @param packageName the package name of application.
+     * @return Return the process ID of application if application is running, otherwise -1 will be return ed.
+     */
+    public static int checkApplicationProcess(IDevice device, String packageName) {
+        String cmd = AdbUtil.getPsCommand(device) + "|grep " + packageName;
+        String ret;
+        try {
+            ret = AdbUtil.shell(cmd, device);
+            if (StringUtil.isEmpty(ret)) {
+                return -1;
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return -1;
+        }
+        ret = ret.trim();
+        return CommonUtil.resolveProcessID(ret, packageName);
     }
 
     /**

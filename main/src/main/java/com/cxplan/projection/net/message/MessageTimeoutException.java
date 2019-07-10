@@ -1,7 +1,7 @@
 package com.cxplan.projection.net.message;
 
 /**
- * 消息请求超时，该异常会抛出，发生在同步请求中。
+ * When message sent by controller is timeout, this exception will be thrown.
  *
  * @author KennyLiu
  * @created on 2017/8/18

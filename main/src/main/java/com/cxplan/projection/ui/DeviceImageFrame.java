@@ -2,25 +2,30 @@ package com.cxplan.projection.ui;
 
 import com.alee.extended.window.ComponentMoveAdapter;
 import com.alee.global.StyleConstants;
+import com.alee.laf.button.WebButton;
+import com.alee.laf.button.WebToggleButton;
+import com.alee.managers.language.data.TooltipWay;
+import com.alee.managers.tooltip.TooltipManager;
 import com.cxplan.projection.IApplication;
 import com.cxplan.projection.MonkeyConstant;
 import com.cxplan.projection.core.adb.AdbUtil;
 import com.cxplan.projection.core.adb.RecordMeta;
-import com.cxplan.projection.core.connection.ConnectStatusListener;
-import com.cxplan.projection.core.connection.DeviceConnectionEvent;
-import com.cxplan.projection.core.connection.DeviceConnectionListener;
-import com.cxplan.projection.core.connection.IDeviceConnection;
+import com.cxplan.projection.core.connection.*;
 import com.cxplan.projection.core.setting.Setting;
 import com.cxplan.projection.core.setting.SettingConstant;
 import com.cxplan.projection.i18n.StringManager;
 import com.cxplan.projection.i18n.StringManagerFactory;
 import com.cxplan.projection.net.message.MessageException;
+import com.cxplan.projection.script.ViewNode;
+import com.cxplan.projection.script.io.ScriptDeviceConnection;
 import com.cxplan.projection.service.IDeviceService;
 import com.cxplan.projection.ui.component.ADBPullFileMonitor;
 import com.cxplan.projection.ui.component.BaseWebFrame;
 import com.cxplan.projection.ui.component.IconButton;
 import com.cxplan.projection.ui.component.IconToggleButton;
+import com.cxplan.projection.ui.component.monkey.MonkeyCanvas;
 import com.cxplan.projection.ui.component.monkey.MonkeyInputListener;
+import com.cxplan.projection.ui.laf.tooltip.CXTooltipManager;
 import com.cxplan.projection.ui.util.GUIUtil;
 import com.cxplan.projection.ui.util.IconUtil;
 import com.cxplan.projection.util.CommonUtil;
@@ -94,6 +99,8 @@ public class DeviceImageFrame extends BaseWebFrame {
     private JPanel toolBarPanel;
     private JLabel tipLabel;
     private IconToggleButton wirelessBtn;
+    //Display all properties of view on screen when span the view by mouse.
+    private ViewPropertyPanel viewPropertyPanel;
 
     private IApplication application;
     private IDeviceConnection connection;
@@ -175,6 +182,11 @@ public class DeviceImageFrame extends BaseWebFrame {
         isInProjection = false;
         connection.closeImageChannel();
         application.removeDeviceConnectionListener(deviceConnectionListener);
+        ScriptDeviceConnection scriptConnection = application.getScriptConnection(connection.getId());
+        if (scriptConnection != null) {
+            scriptConnection.stopRecord();
+        }
+
         super.dispose();
         if (imageThread != null) {
             imageThread.stopShow();
@@ -213,8 +225,8 @@ public class DeviceImageFrame extends BaseWebFrame {
                         installMainPackage();
                     } else {
                         int versionCode = application.getInfrastructureService().getMainPackageVersion(connection.getId());
-                        if (versionCode != CommonUtil.SUPPORTED_VERSION) {
-                            logger.info("Supported version is {}, but current is {}", CommonUtil.SUPPORTED_VERSION, versionCode);
+                        if (versionCode != CommonUtil.MAIN_SUPPORTED_VERSION) {
+                            logger.info("Supported version is {}, but current is {}", CommonUtil.MAIN_SUPPORTED_VERSION, versionCode);
                             installMainPackage();
                         }
                     }
@@ -234,6 +246,65 @@ public class DeviceImageFrame extends BaseWebFrame {
         } catch (Exception ex) {
             logger.error(ex.getMessage(), ex);
             String installFailText = stringMgr.getString("status.install.fail");
+            GUIUtil.showErrorMessageDialog(installFailText + ": " + ex.getMessage());
+            return;
+        }
+    }
+
+    public boolean openScriptChannel() {
+        if (!connection.isImageChannelAvailable()) {
+            String error = stringMgr.getString("status.open_script.not_image_channel");
+            GUIUtil.showErrorMessageDialog(error);
+            return false;
+        }
+
+        ScriptDeviceConnection scriptConnection = getScriptConnection();
+        if (!scriptConnection.isConnected()) {
+            Runnable task = new Runnable() {
+                @Override
+                public void run() {
+                    //1. check installation
+                    String path = application.getScriptService().getScriptPackageInstallPath(connection.getId());
+                    if (path == null) {
+                        installScriptPackage();
+                    } else {
+                        int versionCode = application.getScriptService().getScriptPackageVersion(connection.getId());
+                        if (versionCode != CommonUtil.SCRIPT_SUPPORTED_VERSION) {
+                            logger.info("Supported version is {}, but current is {}", CommonUtil.SCRIPT_SUPPORTED_VERSION, versionCode);
+                            installScriptPackage();
+                        }
+                    }
+
+                    //2. connect to script service
+                    showWaitingTip(stringMgr.getString("status.script.connecting"));
+                    ScriptDeviceConnection scriptConnection = getScriptConnection();
+                    try {
+                        scriptConnection.connect();
+                    } catch (ConnectException e) {
+                        logger.error(e.getMessage(), e);
+                        GUIUtil.showErrorMessageDialog(e.getMessage());
+                        return;
+                    }
+
+                    //3. open image channel
+                    showMonkeyScreen();
+
+                }
+            };
+            application.getExecutors().submit(task);
+        }
+
+        return true;
+    }
+
+    private void installScriptPackage() {
+        String installTip = stringMgr.getString("status.script_process.install");
+        showWaitingTip(installTip);
+        try {
+            application.getScriptService().installScriptService(connection.getId());
+        } catch (Exception ex) {
+            logger.error(ex.getMessage(), ex);
+            String installFailText = stringMgr.getString("status.script_install.fail");
             GUIUtil.showErrorMessageDialog(installFailText + ": " + ex.getMessage());
             return;
         }
@@ -276,7 +347,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         waitImageChannelChanged(null);
     }
     /**
-     * When some image parameters are changed, the image service may make some modification.
+     * When some image parameters are changed, the image service need to adapt new parameters.
      * Client should wait a moment util modification is completed.
      */
     public void waitImageChannelChanged(String msg) {
@@ -345,7 +416,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         //setting button
         IconButton settingBtn = new IconButton(IconUtil.getIcon("/image/device/setting.png"));
         String tip = stringMgr.getString("toolbar.setting.tip");
-        settingBtn.setToolTipText(tip);
+        TooltipManager.setTooltip(settingBtn, tip, TooltipWay.trailing);
         settingBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -361,7 +432,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         wirelessBtn.setSelectedIcon(IconUtil.getIcon("/image/device/wifi_selected.png"));
         wirelessBtn.setSelected(connection.isWirelessMode());
         tip = stringMgr.getString("toolbar.wireless.tip");
-        wirelessBtn.setToolTipText(tip);
+        CXTooltipManager.setTooltip(wirelessBtn, tip, TooltipWay.trailing);
         wirelessBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -378,7 +449,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         recordBtn.setSelected(false);
         recordBtn.setSelectedIcon(IconUtil.getIcon("/image/device/recording.png"));
         tip = stringMgr.getString("toolbar.record.tip");
-        recordBtn.setToolTipText(tip);
+        CXTooltipManager.setTooltip(recordBtn, tip, TooltipWay.trailing);
         recordBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -394,9 +465,9 @@ public class DeviceImageFrame extends BaseWebFrame {
         pane.add(recordBtn, JideBoxLayout.FIX);
 
         //screenshot
-        IconButton screenshotBtn = new IconButton(IconUtil.getIcon("/image/device/screenshot.png"));
+        final IconButton screenshotBtn = new IconButton(IconUtil.getIcon("/image/device/screenshot.png"));
         tip = stringMgr.getString("toolbar.screenshot.tip");
-        screenshotBtn.setToolTipText(tip);
+        CXTooltipManager.setTooltip(screenshotBtn, tip, TooltipWay.trailing);
         screenshotBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -430,7 +501,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         //volume up
         IconButton volumeUpBtn = new IconButton(IconUtil.getIcon("/image/device/volume_up.png"));
         tip = stringMgr.getString("toolbar.volumeup.tip");
-        volumeUpBtn.setToolTipText(tip);
+        CXTooltipManager.setTooltip(volumeUpBtn, tip, TooltipWay.trailing);
         volumeUpBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -446,7 +517,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         //volume down
         IconButton volumeDownBtn = new IconButton(IconUtil.getIcon("/image/device/volume_down.png"));
         tip = stringMgr.getString("toolbar.volumedown.tip");
-        volumeDownBtn.setToolTipText(tip);
+        CXTooltipManager.setTooltip(volumeDownBtn, tip, TooltipWay.trailing);
         volumeDownBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -465,7 +536,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         //brightness up
         IconButton brightnessUpBtn = new IconButton(IconUtil.getIcon("/image/device/brightness_up.png"));
         tip = stringMgr.getString("toolbar.brightness_up.tip");
-        brightnessUpBtn.setToolTipText(tip);
+        CXTooltipManager.setTooltip(brightnessUpBtn, tip, TooltipWay.trailing);
         brightnessUpBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -481,7 +552,7 @@ public class DeviceImageFrame extends BaseWebFrame {
         //brightness down
         IconButton brightnessDownBtn = new IconButton(IconUtil.getIcon("/image/device/brightness_down.png"));
         tip = stringMgr.getString("toolbar.brightness_down.tip");
-        brightnessDownBtn.setToolTipText(tip);
+        CXTooltipManager.setTooltip(brightnessDownBtn, tip, TooltipWay.trailing);
         brightnessDownBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -494,8 +565,63 @@ public class DeviceImageFrame extends BaseWebFrame {
             }
         });
         pane.add(brightnessDownBtn, JideBoxLayout.FIX);
+        pane.add(Box.createHorizontalStrut(10), JideBoxLayout.FIX);
+
+        WebButton scriptBtn = new WebButton("Script");
+        scriptBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                ScriptRecorderDialog recorderDialog =
+                        new ScriptRecorderDialog(DeviceImageFrame.this, application, connection.getId());
+                recorderDialog.showCenterToOwner();
+            }
+        });
+        pane.add(scriptBtn, JideBoxLayout.FIX);
+
+        final WebToggleButton spanBtn = new WebToggleButton("Span");
+        spanBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (spanBtn.isSelected()) {
+                    startSpanTrace(spanBtn);
+                } else {
+                    stopSpanTrace();
+                }
+            }
+        });
+        pane.add(spanBtn, JideBoxLayout.FIX);
+
+        WebButton dumpHierarchyBtn = new WebButton("Dump");
+        dumpHierarchyBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                try {
+                    byte[] data = application.getScriptService().dumpHierarchy(connection.getId());
+                    File file = GUIUtil.saveFile(DeviceImageFrame.this,
+                            "hierarchy_" + connection.getId() + ".xml");
+                    if (file == null) {
+                        return;
+                    }
+
+                    CommonUtil.writeByteArray2File(data, file);
+                } catch (Exception e1) {
+                    GUIUtil.showErrorMessageDialog(e1.getMessage());
+                }
+            }
+        });
+        pane.add(dumpHierarchyBtn, JideBoxLayout.FIX);
 
         return pane;
+    }
+
+    private ScriptDeviceConnection getScriptConnection() {
+        ScriptDeviceConnection scriptConnection = application.getScriptConnection(connection.getId());
+        if (scriptConnection == null) {
+            throw new RuntimeException("The script connection doesn't exist");
+        }
+        return scriptConnection;
     }
 
     private void installListener() {
@@ -880,6 +1006,102 @@ public class DeviceImageFrame extends BaseWebFrame {
         logger.info("Frame size is changed:[{}x{}]", getWidth(), getHeight());
     }
 
+    public void playScript() {
+        ScriptDeviceConnection scriptConnection = application.getScriptConnection(connection.getId());
+        if (scriptConnection == null) {
+            GUIUtil.showErrorMessageDialog("The script connection is lost");
+            return;
+        }
+
+        if (scriptConnection.isRecording()) {
+            GUIUtil.showErrorMessageDialog("A recording is in progress.");
+            return;
+        }
+
+        //open script channel
+        if (!openScriptChannel()) {
+            return;
+        }
+        //play recorder.
+        scriptConnection.playRecorder();
+    }
+
+    /**
+     * Open property panel and show properties of view node.
+     *
+     * @param viewNode view node object.
+     */
+    private void showViewPropertyPane(final ViewNode viewNode) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                if (viewPropertyPanel == null) {
+                    viewPropertyPanel = new ViewPropertyPanel();
+                    JPanel mainContent = (JPanel)getContentPane();
+                    mainContent.add(new JScrollPane(viewPropertyPanel), BorderLayout.EAST);
+                } else {
+                    viewPropertyPanel.getParent().getParent().setVisible(true);
+                }
+                adaptFrameSize();
+
+                viewPropertyPanel.setViewNode(viewNode);
+            }
+        });
+    }
+
+    /**
+     * Hide the property pane for view on device.
+     */
+    private void hideViewPropertyPane() {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                if (viewPropertyPanel != null) {
+                    viewPropertyPanel.getParent().getParent().setVisible(false);
+                    adaptFrameSize();
+                }
+            }
+        });
+    }
+
+    private boolean spanComponent = false;
+    private Rectangle currentRect;
+    private IDisplayPainter componentPainter = new IDisplayPainter() {
+        @Override
+        public void render(Graphics g) {
+            if (spanComponent && currentRect != null) {
+                Color old = g.getColor();
+                g.setColor(Color.RED);
+                g.drawRect(currentRect.x, currentRect.y, currentRect.width, currentRect.height);
+                g.setColor(old);
+            }
+        }
+    };
+    private MouseAdapter spanMouseListener = new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+            if (spanComponent) {
+
+                double scale = ((MonkeyCanvas)clientScreen.getCanvas()).getScale();
+                Point realPoint = ((MonkeyCanvas)clientScreen.getCanvas()).convert2DevicePoint(e.getPoint());
+                try {
+                    ViewNode viewNode = application.getScriptService().spanComponent(connection.getId(), realPoint.x, realPoint.y);
+                    currentRect = new Rectangle((int)(viewNode.getBound().getLeft() * scale),
+                            (int)(viewNode.getBound().getTop() * scale),
+                            (int)(viewNode.getBound().width() * scale),
+                            (int)(viewNode.getBound().height() * scale));
+                    clientScreen.getCanvas().repaint();
+
+                    showViewPropertyPane(viewNode);
+                } catch (MessageException e1) {
+                    logger.error(e1.getMessage(), e1);
+                    GUIUtil.showErrorMessageDialog(e1.getMessage());
+                    return;
+                }
+            }
+
+        }
+    };
     MonkeyInputListener monkeyInputListener = new MonkeyInputListener() {
         @Override
         public void press(int keyCode) {
@@ -892,7 +1114,9 @@ public class DeviceImageFrame extends BaseWebFrame {
             } catch (MessageException e) {
                 logger.error(e.getMessage(), e);
                 GUIUtil.showErrorMessageDialog(e.getMessage() , "ERROR");
+                return;
             }
+
         }
 
         @Override
@@ -902,48 +1126,65 @@ public class DeviceImageFrame extends BaseWebFrame {
             } catch(Exception ex) {
                 logger.error(ex.getMessage(), ex);
                 GUIUtil.showErrorMessageDialog(ex.getMessage());
+                return;
             }
+
         }
 
         @Override
         public void touchDown(int x, int y) {
+            if (spanComponent) {
+                return;
+            }
+
             try {
-                if (!DeviceImageFrame.this.connection.isOnline()) {
+                if (!connection.isOnline()) {
                     GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                     return;
                 }
-                monkeyService.touchDown(DeviceImageFrame.this.connection.getId(), x, y);
+                monkeyService.touchDown(connection.getId(), x, y);
             } catch (Exception e1) {
-                logger.error("[" + DeviceImageFrame.this.connection.getId() + "]Touching down failed:" + e1.getMessage(), e1);
+                logger.error("[" + connection.getId() + "]Touching down failed:" + e1.getMessage(), e1);
                 GUIUtil.showErrorMessageDialog(e1.getMessage());
+                return;
             }
         }
 
         @Override
         public void touchUp(int x, int y) {
+            if (spanComponent) {
+                return;
+            }
+
             try {
-                if (!DeviceImageFrame.this.connection.isOnline()) {
+                if (!connection.isOnline()) {
                     GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                     return;
                 }
-                monkeyService.touchUp(DeviceImageFrame.this.connection.getId(), x, y);
+                monkeyService.touchUp(connection.getId(), x, y);
             } catch (MessageException e1) {
-                logger.error("[" + DeviceImageFrame.this.connection.getId() + "]Touching up failed:" + e1.getMessage(), e1);
+                logger.error("[" + connection.getId() + "]Touching up failed:" + e1.getMessage(), e1);
                 GUIUtil.showErrorMessageDialog(e1.getMessage());
+                return;
             }
+
         }
 
         @Override
         public void touchMove(int x, int y) {
-            if (!DeviceImageFrame.this.connection.isOnline()) {
+            if (spanComponent) {
+                return;
+            }
+            if (!connection.isOnline()) {
                 GUIUtil.showErrorMessageDialog(stringMgr.getString("status.disconnected"), "ERROR");
                 return;
             }
             try {
-                monkeyService.touchMove(DeviceImageFrame.this.connection.getId(), x, y);
+                monkeyService.touchMove(connection.getId(), x, y);
             } catch (MessageException e1) {
-                logger.error("[" + DeviceImageFrame.this.connection.getId() + "]Dragging failed:" + e1.getMessage(), e1);
+                logger.error("[" + connection.getId() + "]Dragging failed:" + e1.getMessage(), e1);
                 GUIUtil.showErrorMessageDialog(e1.getMessage());
+                return;
             }
         }
 
@@ -962,8 +1203,38 @@ public class DeviceImageFrame extends BaseWebFrame {
             } catch (MessageException e) {
                 logger.error("[" + DeviceImageFrame.this.connection.getId() + "]Dragging failed:" + e.getMessage(), e);
                 GUIUtil.showErrorMessageDialog(e.getMessage());
+                return;
             }
+
         }
 
+
     };
+
+    private void startSpanTrace(JToggleButton btn) {
+        //open script channel
+        if (!openScriptChannel()) {
+            btn.setSelected(false);
+            return;
+        }
+        spanComponent = true;
+
+        clientScreen.setExpandPainter(componentPainter);
+        clientScreen.getCanvas().removeMouseListener(spanMouseListener);
+        clientScreen.getCanvas().addMouseListener(spanMouseListener);
+    }
+
+    private void stopSpanTrace() {
+        ScriptDeviceConnection scriptConnection = application.getScriptConnection(connection.getId());
+        if (scriptConnection == null) {
+            GUIUtil.showErrorMessageDialog("The script connection is lost");
+            return;
+        }
+
+        spanComponent = false;
+
+        clientScreen.setExpandPainter(null);
+        clientScreen.getCanvas().removeMouseListener(spanMouseListener);
+        hideViewPropertyPane();
+    }
 }
